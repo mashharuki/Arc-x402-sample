@@ -1,13 +1,13 @@
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import dotenv from "dotenv";
 import "dotenv/config";
-import { kairos } from "viem/chains";
+import { arcTestnet } from "viem/chains";
 
 dotenv.config();
 
 // chain id
 // Please replace this with your own chain id if you are using a different chain.
-export const CHAIN_ID = `eip155:${kairos.id}` as `${string}:${string}`;
+export const CHAIN_ID = `eip155:${arcTestnet.id}` as `${string}:${string}`;
 
 // x402に関する設定
 export const x402Config = {
