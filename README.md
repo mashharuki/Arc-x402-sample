@@ -185,7 +185,7 @@ Tools: `wallet_status`, `wallet_login_start`, `wallet_login_verify`, `set_budget
 
 ### Setup
 
-1. In the [Privy dashboard](https://dashboard.privy.io), enable **Email** login and copy the App ID, App Secret and Client ID.
+1. In the [Privy dashboard](https://dashboard.privy.io), enable **Email** login, copy the App ID, App Secret and Client ID, and add `http://localhost:5173` to **Allowed origins** (the MCP server runs on Node, which sends no `Origin` header, so it sets one itself; without a registered origin Privy answers `Must specify origin`).
 2. Create `pkgs/mcp/.env` (gitignored) with these keys:
 
 ```bash
@@ -196,15 +196,35 @@ ASSET_ADDRESS=0x3600000000000000000000000000000000000000
 # comma separated. Use the x402 server's EVM_ADDRESS (the payTo address)
 ALLOWED_PAYEES=
 # optional
+# must match a value in the Privy dashboard's Allowed origins
+PRIVY_ORIGIN=http://localhost:5173
 PAYWALL_API_BASE_URL=http://localhost:4021
 MAX_AMOUNT_PER_PAYMENT=1000000
 ```
 
-3. Start the facilitator and the server (`pnpm start`), then register the MCP server with Claude Code (do not use `pnpm dev`: its banner would be written to stdout, which is the MCP protocol channel):
+3. Start the facilitator and the server (`pnpm start`), then register the MCP server with Claude Code (do not use `pnpm dev`: its banner would be written to stdout, which is the MCP protocol channel). Either way works:
 
-```bash
-claude mcp add x402-arc-demo -- pnpm --dir "$(pwd)/pkgs/mcp" exec tsx src/index.ts
-```
+   - With the CLI:
+
+     ```bash
+     claude mcp add x402-arc-demo -- pnpm --dir "$(pwd)/pkgs/mcp" exec tsx src/index.ts
+     ```
+
+   - With an MCP config file (`.mcp.json` at the repo root, or `.claude/.mcp.json` passed via `claude --mcp-config .claude/.mcp.json`). Replace `<repo>` with the absolute path of this repository, because relative paths depend on the directory Claude Code is started from:
+
+     ```json
+     {
+       "mcpServers": {
+         "x402-arc-demo": {
+           "type": "stdio",
+           "command": "pnpm",
+           "args": ["--dir", "<repo>/pkgs/mcp", "exec", "tsx", "src/index.ts"]
+         }
+       }
+     }
+     ```
+
+   Secrets stay in `pkgs/mcp/.env`; do not put `PRIVY_APP_SECRET` in the config file. After changing the MCP code or `.env`, reconnect with `/mcp` so the server restarts.
 
 4. Ask Claude Code: "Check my wallet status and pay for /usage?units=3". It will guide you through the email login, then you fund the printed address with testnet USDC and set a budget.
 

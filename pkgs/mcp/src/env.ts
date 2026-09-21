@@ -13,6 +13,8 @@ const envSchema = z.object({
   PRIVY_APP_ID: z.string().min(1),
   PRIVY_APP_SECRET: z.string().min(1),
   PRIVY_CLIENT_ID: z.string().min(1),
+  // Node の fetch は Origin を付けないため明示する。Privy Dashboard の Allowed origins に登録済みの値にする
+  PRIVY_ORIGIN: z.url().default("http://localhost:5173"),
   // 決済に使うトークン(USDC)のアドレス
   ASSET_ADDRESS: address,
   // ポリシーで送金先として許可するアドレス(カンマ区切り)。x402 serverの EVM_ADDRESS を指定する
