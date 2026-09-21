@@ -98,7 +98,9 @@ export const createApp = (facilitator: x402Facilitator): Hono => {
         const response: SettleResponse = {
           success: false,
           errorReason: error.message.replace("Settlement aborted: ", ""),
-          network: "unknown",
+          // 中断時は未送信のため transaction は空文字、network は不明として型を合わせる
+          transaction: "",
+          network: "unknown" as SettleResponse["network"],
         };
 
         return c.json(response);
