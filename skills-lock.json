@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "privy": {
+      "source": "privy-io/privy-agentic-wallets-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "5564722594e0170a21d38999f628588ccfca445cd89634af4c5a52d0d3e08c37"
+    }
+  }
+}
