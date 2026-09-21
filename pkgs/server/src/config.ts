@@ -1,9 +1,11 @@
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
-import dotenv from "dotenv";
-import "dotenv/config";
 import { arcTestnet } from "viem/chains";
 
-dotenv.config();
+export type ServerEnv = {
+  FACILITATOR_URL: string;
+  ASSET_ADDRESS: string;
+  EVM_ADDRESS: string;
+};
 
 // chain id
 // Please replace this with your own chain id if you are using a different chain.
@@ -18,18 +20,18 @@ export const USAGE_UNIT_PRICE = 100000n; // 1ユニット = 0.1 USDC
 export const USAGE_MAX_AMOUNT = "500000"; // 認可上限 = 0.5 USDC
 
 // x402に関する設定
-export const x402Config = {
+export const createX402Config = (env: ServerEnv) => ({
   "GET /weather": {
     accepts: [
       {
         scheme: "exact",
         price: {
           amount: "500000", // 0.5 USDC (decimals = 6)
-          asset: process.env.ASSET_ADDRESS as `0x${string}`, // USDC
+          asset: env.ASSET_ADDRESS as `0x${string}`, // USDC
           extra: ASSET_EXTRA,
         },
         network: CHAIN_ID as `${string}:${string}`,
-        payTo: process.env.EVM_ADDRESS as `0x${string}`,
+        payTo: env.EVM_ADDRESS as `0x${string}`,
       },
     ],
     description:
@@ -51,15 +53,15 @@ export const x402Config = {
         scheme: "upto",
         price: {
           amount: USAGE_MAX_AMOUNT,
-          asset: process.env.ASSET_ADDRESS as `0x${string}`, // USDC
+          asset: env.ASSET_ADDRESS as `0x${string}`, // USDC
           extra: ASSET_EXTRA,
         },
         network: CHAIN_ID as `${string}:${string}`,
-        payTo: process.env.EVM_ADDRESS as `0x${string}`,
+        payTo: env.EVM_ADDRESS as `0x${string}`,
       },
     ],
     description:
       "Usage-based billing sample (upto): settles only the consumed units up to the authorized maximum",
     mimeType: "application/json",
   },
-};
+});
