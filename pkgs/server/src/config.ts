@@ -16,11 +16,11 @@ export const x402Config = {
       {
         scheme: "exact",
         price: {
-          amount: "5000000000000", // 0.5 USDC
+          amount: "500000", // 0.5 USDC (decimals = 6)
           asset: process.env.ASSET_ADDRESS as `0x${string}`, // USDC
           extra: {
             name: "USDC",
-            version: "1",
+            version: "2",
           },
         },
         network: CHAIN_ID as `${string}:${string}`,

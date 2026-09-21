@@ -1,8 +1,8 @@
 # Arc-x402-sample — Core
 
 pnpm workspace (`pnpm-workspace.yaml`: `pkgs/*`) demonstrating the x402 HTTP payment protocol
-(`@x402/*` packages, ^2.23.0). README says the target is **Arc Testnet**, but the code is still the
-Kaia Kairos (`eip155:1001`, JPYC) template — migration in progress, see `mem:chain_config`.
+(`@x402/*` packages, ^2.23.0) on **Arc Testnet** (`eip155:5042002`, USDC). Migrated from a Kaia/JPYC
+template with some stale leftovers — see `mem:chain_config`.
 
 ## Packages (all independent, no cross-package imports)
 

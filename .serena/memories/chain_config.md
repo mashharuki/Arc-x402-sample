@@ -1,22 +1,25 @@
 # Chain / asset config — where network- and token-specific values live
 
-Status: README targets **Arc Testnet**, code is still the Kaia Kairos template (`viem/chains` `kairos`,
-JPYC). Switching networks means touching every spot below; there is no shared constants package.
+Status: code targets **Arc Testnet** (`arcTestnet` from `viem/chains`, `eip155:5042002`, native USDC
+ERC-20 interface `0x3600000000000000000000000000000000000000`). Migrated from a Kaia Kairos/JPYC
+template; leftovers listed below. No shared constants package — values live in separate places.
 
 ## Chain identity (3 independent sources — keep in sync)
 
-- `pkgs/server/src/config.ts`: `CHAIN_ID = eip155:${kairos.id}`; also consumed by `resourceServer.ts` (`register`) and `x402Config[*].network`.
-- `pkgs/facilitator/src/config.ts`: `chainInfo = { chain: kairos, chainId }`; `index.ts` registers `exact` + `upto` schemes on `chainInfo.chainId`; viem client uses `chainInfo.chain`'s default RPC (`http()` with no URL). Chain missing from `viem/chains` → needs `defineChain`.
+- `pkgs/server/src/config.ts`: `CHAIN_ID = eip155:${arcTestnet.id}`; also used by `resourceServer.ts` (`register`) and `x402Config[*].network`.
+- `pkgs/facilitator/src/config.ts`: `chainInfo = { chain: arcTestnet, chainId }`; `index.ts` registers `exact` + `upto` on `chainInfo.chainId`; viem client uses the chain's default RPC (`http()`, no URL).
 - `pkgs/client`: `.env` `CHAIN_ID` (bare number, no `eip155:` prefix) → `eip155:${CHAIN_ID}` in `src/config.ts`.
 
-## Token / asset (env-driven, plus hardcoded token specifics in server)
+## Token / asset (must match the on-chain token)
 
-- `ASSET_ADDRESS` env in **client** and **server** (`.env.example` still holds the JPYC address). Client uses it in `setSpendControls.allowedAssets`.
-- Hardcoded in `pkgs/server/src/config.ts` and token-specific: `price.amount` (`"10000000000000000000"` = 10 × 10^18, assumes 18 decimals) and `price.extra` `{ name: "JPY Coin", version: "1" }` (must match the asset's EIP-712 domain). Change these with the asset.
+- `ASSET_ADDRESS` env in client and server. Client uses it in `setSpendControls.allowedAssets`.
+- Hardcoded in `pkgs/server/src/config.ts` `x402Config`: `price.amount` (atomic units) and `price.extra` `{ name, version }`.
+- `extra` is the token's **EIP-712 domain**; it must equal on-chain `name()`/`version()`, otherwise the facilitator's verify reverts with `FiatTokenV2: invalid signature` (x402 labels it `invalid_exact_evm_token_version_mismatch`).
+- Arc USDC (measured on-chain): `name()="USDC"`, `version()="2"` (not "1"), `decimals()=6` → 0.5 USDC = `"500000"`. When switching token, read `name/version/decimals/DOMAIN_SEPARATOR` via RPC rather than guessing.
 - `payTo` = server `EVM_ADDRESS` env. Facilitator signer = `EVM_PRIVATE_KEY` env (needs native gas on the target chain).
 
-## Leftover names to fix during migration
+## Leftovers from the Kaia template (still stale)
 
+- `pkgs/client/.env.example` `CHAIN_ID=1001` and `pkgs/server/.env.example` `ASSET_ADDRESS` = JPYC — `pnpm setup` copies these, so fresh setups get Kaia values.
+- Comments `// Kaia testnet - Exact|Upto` in `facilitator/src/index.ts`; stale `84532` (Base Sepolia) comment in `server/src/resourceServer.ts`.
 - Root `package.json` `name: kaia-x402-sample` (Serena project name derives from it).
-- Comments `// Kaia testnet - Exact|Upto` in `facilitator/src/index.ts`; `// JPYC` in client/server config.
-- Stale comment in `server/src/resourceServer.ts` says chain id 84532 (Base Sepolia) — wrong for any current config.
