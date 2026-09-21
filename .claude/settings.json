@@ -64,13 +64,6 @@
       "Edit(/.github/workflows/**)"
     ]
   },
-  "enabledPlugins": {
-    "example-skills@anthropic-agent-skills": true
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "bun x ccusage statusline"
-  },
   "hooks": {
     "PreToolUse": [
       {
@@ -174,5 +167,13 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bun x ccusage statusline"
+  },
+  "enabledPlugins": {
+    "example-skills@anthropic-agent-skills": true,
+    "cloudflare@cloudflare": true
   }
 }
