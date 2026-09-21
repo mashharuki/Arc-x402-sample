@@ -1,0 +1,24 @@
+{
+  "name": "kaia-x402-sample",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "format": "pnpm exec biome format --write .",
+    "check": "pnpm exec biome check --write .",
+    "x402client": "pnpm --filter x402client",
+    "x402server": "pnpm --filter x402server",
+    "facilitator": "pnpm --filter facilitator",
+    "setup": "sh ./scripts/setup.sh",
+    "start": "sh ./scripts/start.sh",
+    "stop": "sh ./scripts/stop.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.32.1",
+  "devDependencies": {
+    "@biomejs/biome": "2.5.10"
+  }
+}
