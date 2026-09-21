@@ -176,3 +176,36 @@ PASS  3. client側の上限による拒否 - 署名前に拒否された: Failed
 [Arc Testnet Explorer upto決済のトランザクション 0xd72d264486fbc0924aa5ef111085c0770280db55e3e1351950bc79b11fedcfc1](https://explorer.testnet.arc.io/tx/0xd72d264486fbc0924aa5ef111085c0770280db55e3e1351950bc79b11fedcfc1)
 
 Not covered by the script yet: allowance exhaustion (run `approve 0 --execute`, then `guardrails`; restore with `approve 2000000 --execute`) and signature expiry (`maxTimeoutSeconds`, 300 s).
+
+## MCP server for Claude Code (Privy user-owned wallet)
+
+`pkgs/mcp` is a stdio MCP server that lets Claude Code run this demo. Each user gets their own **Privy user-owned wallet**: the user proves their email with a one-time code, the wallet is created with the user as owner, and a locally generated delegate key is added as an additional signer. The delegate key can only sign what the Privy policy allows (payments up to `MAX_AMOUNT_PER_PAYMENT`, only to `ALLOWED_PAYEES`, only on Arc Testnet).
+
+Tools: `wallet_status`, `wallet_login_start`, `wallet_login_verify`, `set_budget` (two steps: preview, then `confirm`), `pay_and_fetch` (only `/weather` and `/usage?units=N`).
+
+### Setup
+
+1. In the [Privy dashboard](https://dashboard.privy.io), enable **Email** login and copy the App ID, App Secret and Client ID.
+2. Create `pkgs/mcp/.env` (gitignored) with these keys:
+
+```bash
+PRIVY_APP_ID=
+PRIVY_APP_SECRET=
+PRIVY_CLIENT_ID=
+ASSET_ADDRESS=0x3600000000000000000000000000000000000000
+# comma separated. Use the x402 server's EVM_ADDRESS (the payTo address)
+ALLOWED_PAYEES=
+# optional
+PAYWALL_API_BASE_URL=http://localhost:4021
+MAX_AMOUNT_PER_PAYMENT=1000000
+```
+
+3. Start the facilitator and the server (`pnpm start`), then register the MCP server with Claude Code (do not use `pnpm dev`: its banner would be written to stdout, which is the MCP protocol channel):
+
+```bash
+claude mcp add x402-arc-demo -- pnpm --dir "$(pwd)/pkgs/mcp" exec tsx src/index.ts
+```
+
+4. Ask Claude Code: "Check my wallet status and pay for /usage?units=3". It will guide you through the email login, then you fund the printed address with testnet USDC and set a budget.
+
+The wallet address and the delegate key are stored in `~/.x402mcp/wallet.json` (mode 0600). The app secret can create wallets for every user of the app, so keep it on your machine or on a server; never share it with workshop attendees.

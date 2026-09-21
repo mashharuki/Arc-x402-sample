@@ -10,6 +10,8 @@ template with some stale leftovers — see `mem:chain_config`.
 - `pkgs/server` (`x402server`) — Hono resource server on :4021 gating `GET /weather` behind x402 middleware.
 - `pkgs/facilitator` (`facilitator`) — Hono x402 facilitator on :4022 (`/verify`, `/settle`, `/supported`, `/health`); verifies/settles on-chain via viem.
 
+- `pkgs/mcp` (`x402mcp`) — stdio MCP server for Claude Code with Privy user-owned wallets; design, status and gotchas in `mem:privy_wallet_design`.
+
 Each package has its own gitignored `.env` (from `.env.example`). `scripts/` (`setup.sh`, `start.sh`,
 `stop.sh`; root `pnpm setup|start|stop`) copy env files / run facilitator+server in background
 (PID + logs in gitignored `.run/`).

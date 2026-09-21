@@ -12,7 +12,7 @@ Sample of the x402 HTTP payment protocol (`@x402/*` ^2.23.0) as a pnpm workspace
 
 ## Commands
 
-Run from the repo root. The three packages are addressed through root scripts: `pnpm facilitator`, `pnpm x402server`, `pnpm x402client` (each is `pnpm --filter <pkg>`).
+Run from the repo root. The packages are addressed through root scripts: `pnpm facilitator`, `pnpm x402server`, `pnpm x402client`, `pnpm x402mcp` (each is `pnpm --filter <pkg>`).
 
 ```bash
 pnpm i
@@ -26,21 +26,24 @@ pnpm x402client run guardrails # upto guardrail scenarios against a running faci
 
 pnpm start / pnpm stop         # facilitator + server in background; PID/logs in .run/
 pnpm check                     # biome check --write . (lint + format); pnpm format = format only
-pnpm facilitator run build     # tsc -> dist/ (only package with a tsconfig)
+pnpm facilitator run build     # tsc -> dist/
+pnpm x402mcp run typecheck     # tsc --noEmit for the MCP package (client/server have no type check)
 
 curl localhost:4022/supported  # facilitator; also /health, POST /verify, POST /settle
 curl localhost:4021/health
 ```
 
-There is no test suite, and `client`/`server` have no type-check step (`tsx` only). The facilitator's `tsc` build is the only available type check. Start order matters: facilitator → server → client.
+There is no test suite, and `client`/`server` have no type-check step (`tsx` only); only `facilitator` (`build`) and `mcp` (`typecheck`) have a `tsconfig.json`. Start order matters: facilitator → server → client.
 
 ## Architecture
 
-Three independent packages with no cross-imports; they communicate only over HTTP:
+Four independent packages with no cross-imports; they communicate only over HTTP (or stdio for `mcp`):
 
 1. **client** — `@x402/axios` wraps an axios instance. On a 402 response it signs a payment with a viem account (`EVM_PRIVATE_KEY`) and retries.
 2. **server** — Hono app with `paymentMiddleware(x402Config, resourceServer)` gating `GET /weather`. Pricing/route config is `x402Config` in `pkgs/server/src/config.ts`. It never touches the chain itself: `HTTPFacilitatorClient` (`FACILITATOR_URL`) delegates verification and settlement.
 3. **facilitator** — Hono app exposing `/verify`, `/settle`, `/supported`. It registers `exact` and `upto` (`UptoEvmScheme`) schemes on one chain, and settles on-chain through a viem wallet client wrapped by `toFacilitatorEvmSigner` (`src/viem.ts`). Lifecycle hooks (`onBefore*`, `onAfter*`, `on*Failure`) in `src/index.ts` log with `================ Stage ================` banners.
+
+4. **mcp** (`pkgs/mcp`, `x402mcp`) — stdio MCP server so Claude Code can run the demo. Tools: `wallet_status`, `wallet_login_start`, `wallet_login_verify`, `set_budget` (two-step, `confirm`), `pay_and_fetch` (path allowlist). Wallets are Privy **user-owned**: email OTP login (`@privy-io/js-sdk-core`), wallet created with `owner = user`, and a per-user delegate key (P-256, generated locally, stored in `~/.x402mcp/wallet.json`, mode 0600) added as an additional signer with a Privy policy (`src/policy.ts`: ALLOW-only rules for upto/exact typed-data signatures within the cap and to allowed payees, plus `approve` transaction signing to the token only). Signing goes through Privy (`createViemAccount`); transactions are broadcast by our own RPC client. Never write to stdout (stdio is the protocol); log with `console.error`. Register with `claude mcp add x402-arc-demo -- pnpm --dir <repo>/pkgs/mcp exec tsx src/index.ts`. `PRIVY_APP_SECRET` must never be handed to workshop attendees. Status: type-checked and smoke-tested without credentials; the Privy login/wallet/policy flow is not yet verified against a real Privy app.
 
 ### `upto` (usage-based) guardrails
 

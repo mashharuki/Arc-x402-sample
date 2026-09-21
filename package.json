@@ -10,6 +10,7 @@
     "x402client": "pnpm --filter x402client",
     "x402server": "pnpm --filter x402server",
     "facilitator": "pnpm --filter facilitator",
+    "x402mcp": "pnpm --filter x402mcp",
     "setup": "sh ./scripts/setup.sh",
     "start": "sh ./scripts/start.sh",
     "stop": "sh ./scripts/stop.sh"
