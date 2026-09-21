@@ -8,7 +8,7 @@ Read https://ethskills.com/SKILL.md and follow it before writing Solidity or shi
 
 ## Overview
 
-Sample of the x402 HTTP payment protocol (`@x402/*` ^2.23.0) as a pnpm workspace (`pkgs/*`). The README targets **Arc Testnet**, but the code is still the Kaia Kairos template (`kairos` from `viem/chains`, `eip155:1001`, JPYC) — the chain migration is unfinished. Serena memories in `.serena/memories/` (start at `core`) hold more detail.
+Sample of the x402 HTTP payment protocol (`@x402/*` ^2.23.0) as a pnpm workspace (`pkgs/*`). It targets **Arc Testnet** (`arcTestnet` from `viem/chains`, `eip155:5042002`, USDC), migrated from a Kaia Kairos/JPYC template that still leaves some stale values (see below). Serena memories in `.serena/memories/` (start at `core`) hold more detail.
 
 ## Commands
 
@@ -42,7 +42,9 @@ Three independent packages with no cross-imports; they communicate only over HTT
 
 ### Chain/asset config is duplicated, not shared
 
-Switching network or token requires editing three places independently — chain in `server/src/config.ts` and `facilitator/src/config.ts` (both import `kairos`), and `CHAIN_ID` (bare number, no `eip155:` prefix) in the client `.env`. The token comes from `ASSET_ADDRESS` (client + server env), but `price.amount` (assumes 18 decimals) and `extra: { name, version }` (the asset's EIP-712 domain) are hardcoded in `server/src/config.ts` and must be changed with the asset. The comment about chain id 84532 in `server/src/resourceServer.ts` is stale.
+Switching network or token requires editing three places independently — chain in `server/src/config.ts` and `facilitator/src/config.ts` (both import `arcTestnet`), and `CHAIN_ID` (bare number, no `eip155:` prefix) in the client `.env`. The token comes from `ASSET_ADDRESS` (client + server env), but `price.amount` and `extra: { name, version }` are hardcoded in `server/src/config.ts` and must match the on-chain token. `extra` is the token's EIP-712 domain: a wrong `version` makes the facilitator's verify revert with `FiatTokenV2: invalid signature`. Arc USDC is `name="USDC"`, `version="2"`, `decimals=6`; read these from the contract when changing token.
+
+Stale Kaia leftovers: `.env.example` files (`CHAIN_ID=1001`, JPYC `ASSET_ADDRESS` — `pnpm setup` copies them), `// Kaia testnet` comments in `facilitator/src/index.ts`, the `84532` comment in `server/src/resourceServer.ts`, and the root package name `kaia-x402-sample`.
 
 ## Conventions specific to this repo
 

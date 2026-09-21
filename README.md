@@ -73,5 +73,14 @@ pnpm x402client run dev
 example result:
 
 ```bash
-
+{ report: { weather: 'sunny', temperature: 70 } }
+Response: { report: { weather: 'sunny', temperature: 70 } }
+Payment settled: {
+  success: true,
+  payer: '0xcA341CE4902756bF9e96e145014DD0aB36A0Fe8E',
+  transaction: '0xe71f21710aa03a31ebcb87032fea3690761d12836c6800f481b1623f21cadede',
+  network: 'eip155:5042002'
+}
 ```
+
+[Arc Testnet Explorer x402決済のトランザクション 0xe71f21710aa03a31ebcb87032fea3690761d12836c6800f481b1623f21cadede](https://explorer.testnet.arc.io/tx/0xe71f21710aa03a31ebcb87032fea3690761d12836c6800f481b1623f21cadede)
