@@ -16,10 +16,10 @@ export const x402Config = {
       {
         scheme: "exact",
         price: {
-          amount: "10000000000000000000",
-          asset: process.env.ASSET_ADDRESS as `0x${string}`, // JPYC
+          amount: "5000000000000", // 0.5 USDC
+          asset: process.env.ASSET_ADDRESS as `0x${string}`, // USDC
           extra: {
-            name: "JPY Coin",
+            name: "USDC",
             version: "1",
           },
         },

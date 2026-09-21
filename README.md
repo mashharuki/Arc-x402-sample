@@ -27,7 +27,29 @@ curl http://localhost:4022/supported | jq
 ```
 
 ```json
-
+{
+  "kinds": [
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:5042002"
+    },
+    {
+      "x402Version": 2,
+      "scheme": "upto",
+      "network": "eip155:5042002",
+      "extra": {
+        "facilitatorAddress": "0x3e5fE9717398d98Aae8A8F435Bf8c29C5aa0d18b"
+      }
+    }
+  ],
+  "extensions": [],
+  "signers": {
+    "eip155:*": [
+      "0x3e5fE9717398d98Aae8A8F435Bf8c29C5aa0d18b"
+    ]
+  }
+}
 ```
 
 2. x402 backend server(Resource server)
