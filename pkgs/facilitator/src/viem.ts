@@ -1,46 +1,27 @@
 import { toFacilitatorEvmSigner } from "@x402/evm";
-import dotenv from "dotenv";
 import { type Chain, createWalletClient, http, publicActions } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-dotenv.config();
-
-// ========================================
-// Validate environment variables
-// ========================================
-
-if (!process.env.EVM_PRIVATE_KEY) {
-  console.error("❌ EVM_PRIVATE_KEY environment variable is required");
-  process.exit(1);
-}
-
-// ========================================
-// EVM
-// ========================================
-
-export const evmAccount = privateKeyToAccount(
-  process.env.EVM_PRIVATE_KEY as `0x${string}`,
-);
-
-console.info(`EVM Facilitator account: ${evmAccount.address}`);
-
 /**
- * 指定したチェーンのVeim クライアントを返すメソッド
- * @param chain
+ * 指定したチェーンのFacilitator EVM signerを作成する。
+ * @param privateKey Facilitatorが決済トランザクションに署名する秘密鍵
+ * @param chain 対象チェーン
+ * @param rpcUrl 省略時はチェーン既定のRPC
  */
-export const getViemClientForChain = (chain: Chain) => {
-  return createWalletClient({
+export const createEvmSigner = (
+  privateKey: `0x${string}`,
+  chain: Chain,
+  rpcUrl?: string,
+) => {
+  const evmAccount = privateKeyToAccount(privateKey);
+  console.info(`EVM Facilitator account: ${evmAccount.address}`);
+
+  const viemClient = createWalletClient({
     account: evmAccount,
     chain,
-    transport: http(),
+    transport: http(rpcUrl),
   }).extend(publicActions);
-};
 
-/**
- * チェーンごとのFacilitator EVM signerを返すメソッド
- * @param viemClient チェーンごとのViemクライアント
- */
-export const getFacilitatorEvmSignerForChain = (viemClient: any) => {
   return toFacilitatorEvmSigner({
     getCode: (args: { address: `0x${string}` }) => viemClient.getCode(args),
 
