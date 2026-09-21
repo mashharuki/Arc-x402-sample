@@ -18,7 +18,7 @@ client.setSpendControls({
   allowedAssets: [
     {
       network: `eip155:${process.env.CHAIN_ID}`,
-      asset: process.env.ASSET_ADDRESS as `0x${string}`, // JPYC
+      asset: process.env.ASSET_ADDRESS as `0x${string}`, // USDC
     },
   ],
 });

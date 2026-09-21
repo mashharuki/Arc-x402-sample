@@ -20,10 +20,17 @@ pnpm x402server run dev    # resource server on :4021
 pnpm x402client run dev    # one-shot client script (pays and exits)
 ```
 
+Or run facilitator + server together in the background (PID/logs in `.run/`, gitignored):
+```bash
+pnpm setup   # copies .env.example -> .env for all three packages
+pnpm start   # scripts/start.sh
+pnpm stop    # scripts/stop.sh
+```
+
 Health checks:
 ```bash
-curl http://localhost:4022/supported
-curl http://localhost:4021/health
+curl http://localhost:4022/supported   # facilitator (also /health)
+curl http://localhost:4021/health      # server
 ```
 
 ## Format / Lint (Biome, repo-wide)

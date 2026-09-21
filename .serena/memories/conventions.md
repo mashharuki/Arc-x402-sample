@@ -11,6 +11,5 @@ This memory only covers patterns specific to this codebase that those rules don'
   `================ <Stage> ================` banner style — follow this if adding more hooks.
 - Error responses in Hono route handlers follow a consistent shape:
   `c.json({ error: error instanceof Error ? error.message : "Unknown error" }, 500)`.
-- Chain id string literal `"eip155:1001"` is duplicated across `client/src/config.ts`,
-  `server/src/config.ts` (as `CHAIN_ID`), and `facilitator/src/viem.ts` (as `chainInfo.chainId`) —
-  there is no shared constants package; when changing the network, update all three independently.
+- Facilitator routes (`/verify`, `/settle`, `/supported`) wrap the body in try/catch and return the error shape above.
+- Chain/network values are not shared across packages — see `mem:chain_config` before changing them.

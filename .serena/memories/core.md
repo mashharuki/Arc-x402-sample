@@ -1,29 +1,29 @@
-# kaia-x402-sample — Core
+# Arc-x402-sample — Core
 
 pnpm workspace (`pnpm-workspace.yaml`: `pkgs/*`) demonstrating the x402 HTTP payment protocol
-(`@x402/*` packages, v2.23.0) on the Kaia testnet (Kairos, chain id `eip155:1001`).
+(`@x402/*` packages, ^2.23.0). README says the target is **Arc Testnet**, but the code is still the
+Kaia Kairos (`eip155:1001`, JPYC) template — migration in progress, see `mem:chain_config`.
 
 ## Packages (all independent, no cross-package imports)
 
-- `pkgs/client` (`x402client`) — demo script that pays for a protected endpoint via `@x402/axios`.
-- `pkgs/server` (`x402server`) — resource server (Hono) that gates `/weather` behind x402 payment middleware.
-- `pkgs/facilitator` (`facilitator`) — the x402 facilitator: verifies/settles payments on-chain via viem.
+- `pkgs/client` (`x402client`) — one-shot script that pays for a protected endpoint via `@x402/axios`.
+- `pkgs/server` (`x402server`) — Hono resource server on :4021 gating `GET /weather` behind x402 middleware.
+- `pkgs/facilitator` (`facilitator`) — Hono x402 facilitator on :4022 (`/verify`, `/settle`, `/supported`, `/health`); verifies/settles on-chain via viem.
 
-Each package has its own `.env` (from `.env.example`, gitignored) and is run independently with
-`pnpm <name> run dev` from repo root (see `mem:suggested_commands`).
+Each package has its own gitignored `.env` (from `.env.example`). `scripts/` (`setup.sh`, `start.sh`,
+`stop.sh`; root `pnpm setup|start|stop`) copy env files / run facilitator+server in background
+(PID + logs in gitignored `.run/`).
 
 ## Details by concern
 
-- Tech stack, versions, chain/asset specifics: `mem:tech_stack`
-- Commands to run each service / format / lint: `mem:suggested_commands`
-- Code style beyond the checked-in `.claude/rules/*`: `mem:conventions`
+- Network/asset-specific values and what to change when switching chain or token: `mem:chain_config`
+- Tech stack, versions, signer construction, payment schemes: `mem:tech_stack`
+- Commands to set up / run each service / format / lint: `mem:suggested_commands`
+- Codebase-specific style beyond `.claude/rules/*`: `mem:conventions`
 - What "done" means for a change here: `mem:task_completion`
 
 ## Non-obvious invariants
 
-- No test suite exists in this repo yet, despite `.claude/rules/testing.md` describing testing
-  conventions — those are aspirational project rules, not yet implemented here.
-- Only `pkgs/facilitator` has a `tsconfig.json` / `build`+`start` scripts; `client` and `server`
-  run directly via `tsx`/`tsx watch` with no compile step.
-- `.env.example` files are excluded from Serena's read permissions (denied by directory rule) —
-  use `Read` via the general-purpose tool instead if their contents are ever needed, or ask the user.
+- No test suite exists, despite `.claude/rules/testing.md` — those rules are aspirational here.
+- Only `pkgs/facilitator` has `tsconfig.json` + `build`/`start`; `client` and `server` run via `tsx` only (no compile, no type-check).
+- `.env.example` files are denied to Serena's read tools — use the general `Read` tool or ask the user.
