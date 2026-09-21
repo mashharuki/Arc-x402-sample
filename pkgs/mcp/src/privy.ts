@@ -28,13 +28,39 @@ class MemoryStorage {
 export const createPrivyClient = (env: Env): PrivyClient =>
   new PrivyClient({ appId: env.PRIVY_APP_ID, appSecret: env.PRIVY_APP_SECRET });
 
+/**
+ * js-sdk-core はブラウザ前提でOriginを自前では付けない。
+ * Node ではPrivyから "Must specify origin" で拒否されるため、privy.io宛のリクエストにだけ付与する
+ */
+let isOriginHeaderInstalled = false;
+
+const installOriginHeader = (origin: string): void => {
+  if (isOriginHeaderInstalled) return;
+  isOriginHeaderInstalled = true;
+  const baseFetch = globalThis.fetch;
+  globalThis.fetch = (input, init) => {
+    const url = new URL(
+      input instanceof Request ? input.url : input.toString(),
+    );
+    if (!url.hostname.endsWith(".privy.io")) return baseFetch(input, init);
+
+    const headers = new Headers(
+      init?.headers ?? (input instanceof Request ? input.headers : undefined),
+    );
+    headers.set("Origin", origin);
+    return baseFetch(input, { ...init, headers });
+  };
+};
+
 /** メールOTPログイン用のクライアント(画面なしで動かす) */
-export const createAuthClient = (env: Env): Privy =>
-  new Privy({
+export const createAuthClient = (env: Env): Privy => {
+  installOriginHeader(env.PRIVY_ORIGIN);
+  return new Privy({
     appId: env.PRIVY_APP_ID,
     clientId: env.PRIVY_CLIENT_ID,
     storage: new MemoryStorage(),
   });
+};
 
 export const sendLoginCode = async (
   auth: Privy,
@@ -102,7 +128,8 @@ export const provisionWallet = async (
     const delegate = generateDelegateKey();
 
     const quorum = await privy.keyQuorums().create({
-      display_name: `x402 delegate for ${session.userId}`,
+      // Privyの上限は50文字。did:privy:... は長いので末尾だけ使う
+      display_name: `x402 delegate ${session.userId.slice(-20)}`,
       public_keys: [delegate.publicKey],
       authorization_threshold: 1,
     });
