@@ -5,7 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",
+    "cf:dev": "wrangler dev --port 8789",
+    "cf:deploy": "wrangler deploy"
   },
   "keywords": [],
   "author": "",
@@ -13,18 +16,18 @@
   "packageManager": "pnpm@10.33.0",
   "dependencies": {
     "@hono/node-server": "^2.1.1",
-    "@x402/avm": "^2.23.0",
     "@x402/core": "^2.23.0",
     "@x402/evm": "^2.23.0",
     "@x402/extensions": "^2.23.0",
     "@x402/hono": "^2.23.0",
-    "@x402/svm": "^2.23.0",
     "dotenv": "^17.4.2",
     "hono": "^4.13.3",
     "tsx": "^4.23.12",
     "viem": "^2.55.19"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0"
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.136.1"
   }
 }
