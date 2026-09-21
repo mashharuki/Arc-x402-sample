@@ -21,6 +21,8 @@ pnpm setup                     # copies pkgs/*/.env.example -> .env (fill in EVM
 pnpm facilitator run dev       # :4022  (tsx watch)
 pnpm x402server run dev        # :4021  (tsx watch)
 pnpm x402client run dev        # one-shot: requests PAYWALL_PATH, pays, prints result
+pnpm x402client run approve [amount] [--execute]  # USDC allowance to Permit2 (upto budget); dry-run without --execute
+pnpm x402client run guardrails # upto guardrail scenarios against a running facilitator + server
 
 pnpm start / pnpm stop         # facilitator + server in background; PID/logs in .run/
 pnpm check                     # biome check --write . (lint + format); pnpm format = format only
@@ -39,6 +41,10 @@ Three independent packages with no cross-imports; they communicate only over HTT
 1. **client** — `@x402/axios` wraps an axios instance. On a 402 response it signs a payment with a viem account (`EVM_PRIVATE_KEY`) and retries.
 2. **server** — Hono app with `paymentMiddleware(x402Config, resourceServer)` gating `GET /weather`. Pricing/route config is `x402Config` in `pkgs/server/src/config.ts`. It never touches the chain itself: `HTTPFacilitatorClient` (`FACILITATOR_URL`) delegates verification and settlement.
 3. **facilitator** — Hono app exposing `/verify`, `/settle`, `/supported`. It registers `exact` and `upto` (`UptoEvmScheme`) schemes on one chain, and settles on-chain through a viem wallet client wrapped by `toFacilitatorEvmSigner` (`src/viem.ts`). Lifecycle hooks (`onBefore*`, `onAfter*`, `on*Failure`) in `src/index.ts` log with `================ Stage ================` banners.
+
+### `upto` (usage-based) guardrails
+
+Server route `GET /usage?units=N` uses the `upto` scheme: the client authorizes a maximum via a Permit2 signature (`USAGE_MAX_AMOUNT`), and the handler settles only `units × USAGE_UNIT_PRICE` through `setSettlementOverrides`. The handler deliberately does not clamp to the maximum, so over-cap settlement can be verified to fail. Two enforcement layers: the per-payment maximum in the Permit2 signature, and the total budget = the token's ERC-20 allowance to Permit2 (set with `approve`; never `maxUint256`). The client also caps signing itself via `createPaymentClient(maxAmountPerPayment)` (default 1 USDC, env `MAX_AMOUNT_PER_PAYMENT`). Gas-sponsoring extensions are not declared, so the client must hold the allowance and gas itself.
 
 ### Chain/asset config is duplicated, not shared
 

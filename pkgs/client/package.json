@@ -5,7 +5,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "approve": "tsx src/approve.ts",
+    "guardrails": "tsx src/guardrails.ts"
   },
   "keywords": [],
   "author": "",

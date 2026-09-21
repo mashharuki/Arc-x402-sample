@@ -20,6 +20,12 @@ pnpm x402server run dev    # resource server on :4021
 pnpm x402client run dev    # one-shot client script (pays and exits)
 ```
 
+upto guardrails (needs facilitator + server running; `approve` sends a tx only with `--execute`):
+```bash
+pnpm x402client run approve 2000000 --execute   # allowance to Permit2 = total budget (0 revokes)
+pnpm x402client run guardrails                  # 3 scenarios: within cap / over-cap settle / client-side cap
+```
+
 Or run facilitator + server together in the background (PID/logs in `.run/`, gitignored):
 ```bash
 pnpm setup   # copies .env.example -> .env for all three packages
