@@ -7,6 +7,7 @@ facilitator / server / mcp(リモートMCP)を Cloudflare Workers で動かす�
 - Cloudflare アカウントと `pnpm exec wrangler login`
 - レシート待ちは I/O であり Workers の CPU 時間を消費しません。Free プランの CPU 上限(10 ms)で問題になり得るのは署名・EIP-712 検証などの計算(`/verify` と `/settle`)です。最初の実 E2E では待ち時間ではなくこれらの CPU 時間を計測してください。CPU time exceeded が出たら Workers Paid が必要です
 - `compatibility_date` は全 `wrangler.jsonc` で `2026-09-21` です。インストール済みの workerd が受け付ける最新日付で、未来日付は拒否されます。wrangler を更新したら日付も更新してください
+- `pkgs/server/wrangler.jsonc` と `pkgs/mcp/wrangler.jsonc` の `compatibility_flags` には `global_fetch_strictly_public` が**必須**です。server は facilitator を、mcp は server を `fetch()` で呼びますが、両方とも同じアカウントの `workers.dev` ゾーンに属するため、このフラグがないと Cloudflare エラー 1042(“Worker tried to fetch from another Worker on the same zone”)で全リクエストが失敗します([Cloudflare Docs: compatibility flags](https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public))
 
 ## 2. ローカル開発
 
@@ -85,12 +86,18 @@ claude mcp add --transport http x402-arc-remote <mcp-url>/mcp
 1. **`/mcp` は認証なしの公開エンドポイント**です。Origin チェックはブラウザしか防げず、誰でもセッションを開始してメール OTP フローを起動できます。レート制限は 30 リクエスト/60 秒/クライアントIP ですが、Cloudflare のロケーション単位であり、IP を変えれば回避できます。任意の強化策として、ワークショップ前に共有 Bearer トークンや OTP 専用の制限の追加を検討してください。
 2. **レート制限は全リクエストを数えます**(SSE の GET も各 JSON-RPC の POST も)。会場の NAT 配下に参加者が多いと1つのバケットを共有し、誤って 429 になることがあります。必要なら `pkgs/mcp/wrangler.jsonc` の `simple.limit` を上げてください。また `ratelimits.namespace_id`(`"4021"`)は Cloudflare アカウント内で一意にしてください。
 3. **ウォレット状態(委任キー)は1つの MCP セッションの Durable Object に保存**されます。クライアントがセッションを失う・切り替わると委任キーが失われ、再度ログインして新しいウォレットを作ることになります。旧ウォレットはユーザー所有のため Privy 側に残りますが、この委任キーでは操作できません。取り残されても許容できる額以上を入金しないでください。
+4. **Bazaar discovery 拡張のスキーマ検証は Workers では動きません**。`/weather` へのリクエスト時に `(warn) x402: Route "GET /weather" has an invalid bazaar extension: Schema validation failed: Code generation from strings disallowed for this context` がログに出ます。内部の ajv が `new Function` でスキーマをコンパイルしますが、Workers は動的コード生成を許可しないためです。決済フロー自体(402 応答・検証・決済)には影響しませんが、Bazaar 経由のサービスディスカバリのスキーマ検証は無効化されたまま動きます。
 
-## 7. 未検証事項
+## 7. 検証済み・未検証事項
 
-- Free プランでの `/verify` と `/settle` の CPU 時間(Workers Paid が必要な可能性)
-- 送信サブリクエストで `Origin` ヘッダが転送されるか(`wallet_login_start`)
+2026-09-22 の実デプロイで確認できたこと:
+- facilitator: `/health`、`/supported`(`exact` / `upto` を `eip155:5042002` で提供)
+- server: `/health`、`/weather`(402)、`/usage?units=1`(402)。facilitator への `fetch()` は `global_fetch_strictly_public` 適用後に成功
+- mcp: リモート Streamable HTTP セッション全体(`initialize` → `notifications/initialized` → `tools/list` → `tools/call wallet_status`)が動作し、`needsWallet: true` を返した
+
+まだ未検証:
+
+- Free プランでの `/verify` と `/settle` の CPU 時間(実際の決済を伴う E2E が必要。Workers Paid が必要になる可能性)
+- 送信サブリクエストで `Origin` ヘッダが転送されるか(`wallet_login_start` を実メールで実行する必要がある)
 - Privy が WebCrypto で生成した委任キーを受け付けるか
 - Privy の実ログイン・ウォレット作成・ポリシー適用の一連の流れ
-
-これらは最初の実デプロイでのテストまで確認できていません。
