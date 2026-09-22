@@ -238,3 +238,42 @@ The wallet address and the delegate key are stored in `~/.x402mcp/wallet.json` (
 pnpm --filter facilitator exec wrangler secret put EVM_PRIVATE_KEY
 pnpm --filter x402mcp exec wrangler secret put PRIVY_APP_SECRET
 ```
+
+### Deploy to Cloudflare Workers
+
+Before deploying, fill in the public (non-secret) values: `ASSET_ADDRESS` and `EVM_ADDRESS` in `pkgs/server/wrangler.jsonc`, and `PRIVY_APP_ID`, `PRIVY_CLIENT_ID`, `ASSET_ADDRESS`, `ALLOWED_PAYEES` in `pkgs/mcp/wrangler.jsonc`. Full checklist and operational caveats: [`docs/cloudflare-deploy.md`](docs/cloudflare-deploy.md).
+
+Deploy in order, copying each printed URL into the next config before deploying it:
+
+```bash
+# 1. facilitator
+pnpm deploy:facilitator
+# copy the printed URL into pkgs/server/wrangler.jsonc -> vars.FACILITATOR_URL
+
+# 2. server
+pnpm deploy:server
+# copy the printed URL into pkgs/mcp/wrangler.jsonc -> vars.PAYWALL_API_BASE_URL
+
+# 3. mcp
+pnpm deploy:mcp
+# copy the printed URL into pkgs/mcp/wrangler.jsonc -> vars.PRIVY_ORIGIN,
+# add that origin to the Privy dashboard's Allowed origins, then redeploy
+pnpm deploy:mcp
+```
+
+Verify:
+
+```bash
+curl -s <facilitator-url>/supported
+curl -s <server-url>/health
+curl -s -i <server-url>/weather        # expect 402
+claude mcp add --transport http x402-arc-remote <mcp-url>/mcp
+```
+
+### Destroy from Cloudflare Workers
+
+```bash
+pnpm --filter facilitator exec wrangler delete
+pnpm --filter x402server exec wrangler delete
+pnpm --filter x402mcp exec wrangler delete
+```
