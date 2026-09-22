@@ -2,6 +2,22 @@
 
 This repo is sample code for Arc Testnet x402 
 
+## Architecture
+
+Three independent services (facilitator, resource server, MCP server) that run either as local Node processes or as Cloudflare Workers from the same source, plus Privy for wallet auth/signing and Arc Testnet for settlement.
+
+![Architecture](docs/diagrams/architecture.svg)
+
+Editable source: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawio) (open in [diagrams.net](https://app.diagrams.net) or the [VS Code Draw.io Integration](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio) extension).
+
+### x402 payment flow
+
+The `exact` scheme (`/weather`) and the `upto` scheme (`/usage?units=N`) both go through the same 402 → sign → verify → settle cycle. The right-hand branch below is the `upto` over-cap case: the facilitator rejects settlement before any on-chain transaction, so no funds move.
+
+![x402 payment flow](docs/diagrams/payment-flow.svg)
+
+Editable source: [`docs/diagrams/payment-flow.drawio`](docs/diagrams/payment-flow.drawio).
+
 ## setup
 
 ```bash
