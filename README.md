@@ -230,6 +230,18 @@ MAX_AMOUNT_PER_PAYMENT=1000000
 
 The wallet address and the delegate key are stored in `~/.x402mcp/wallet.json` (mode 0600). The app secret can create wallets for every user of the app, so keep it on your machine or on a server; never share it with workshop attendees.
 
+### Try every tool in one prompt
+
+Once connected (stdio `x402-arc-demo` or the remote `x402-arc-demo` over HTTP, same tools either way), paste this into Claude Code to exercise all five tools in one pass, including the `upto` cap-exceeded rejection from the [Guardrails](#guardrails-with-the-upto-scheme) section above:
+
+> Check my wallet status. If I don't have a wallet yet, walk me through logging in with my email and creating one, then tell me the address to fund. Once it's funded with testnet USDC, set my budget to 2000000 (2 USDC) — ask me to confirm the amount first, then actually set it. After that:
+> 1. Pay for `/weather` (exact scheme, 0.5 USDC) and show me the result.
+> 2. Pay for `/usage?units=3` (upto scheme, 0.3 USDC, within the 0.5 USDC authorized cap) and show me the settled amount.
+> 3. Pay for `/usage?units=10` (upto scheme, this asks for 1.0 USDC, which is above the 0.5 USDC cap I signed) and show me what happens.
+> Show my balance and allowance before and after each step.
+
+Expected: steps 1–2 settle normally. Step 3's payment is sent (the signature only authorizes up to 0.5 USDC, so it still gets created), but settlement fails — the facilitator rejects it with something like `invalid_upto_evm_payload_settlement_exceeds_amount`, the same over-cap guardrail the `pnpm x402client run guardrails` script demonstrates, now triggered through natural language over MCP.
+
 ## Deploy to Cloudflare Workers
 
 ### setup secret

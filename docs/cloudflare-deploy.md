@@ -5,7 +5,7 @@ facilitator / server / mcp(リモートMCP)を Cloudflare Workers で動かす�
 ## 1. 前提
 
 - Cloudflare アカウントと `pnpm exec wrangler login`
-- レシート待ちは I/O であり Workers の CPU 時間を消費しません。Free プランの CPU 上限(10 ms)で問題になり得るのは署名・EIP-712 検証などの計算(`/verify` と `/settle`)です。最初の実 E2E では待ち時間ではなくこれらの CPU 時間を計測してください。CPU time exceeded が出たら Workers Paid が必要です
+- レシート待ちは I/O であり Workers の CPU 時間を消費しません。Free プランの CPU 上限(10 ms)で問題になり得るのは署名・EIP-712 検証などの計算(`/verify` と `/settle`)です。2026-09-22 の実デプロイでは `exact`(0.5 USDC)と `upto`(0.3 USDC、および上限超過で拒否される 1.0 USDC 要求)の決済がいずれも CPU time exceeded なく完走しました。ただし1リクエストずつの軽い負荷での確認であり、高頻度アクセス時の余裕までは検証していません
 - `compatibility_date` は全 `wrangler.jsonc` で `2026-09-21` です。インストール済みの workerd が受け付ける最新日付で、未来日付は拒否されます。wrangler を更新したら日付も更新してください
 - `pkgs/server/wrangler.jsonc` と `pkgs/mcp/wrangler.jsonc` の `compatibility_flags` には `global_fetch_strictly_public` が**必須**です。server は facilitator を、mcp は server を `fetch()` で呼びますが、両方とも同じアカウントの `workers.dev` ゾーンに属するため、このフラグがないと Cloudflare エラー 1042(“Worker tried to fetch from another Worker on the same zone”)で全リクエストが失敗します([Cloudflare Docs: compatibility flags](https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public))
 
@@ -77,7 +77,7 @@ curl -s -i <server-url>/weather        # 402 が返る
 claude mcp add --transport http x402-arc-remote <mcp-url>/mcp
 ```
 
-リモートで `wallet_login_start` が成功することを必ず確認してください。workerd が送信サブリクエストで呼び出し側が設定した `Origin` ヘッダを転送するかは未検証です。除去される場合、ログインは "Must specify origin" で失敗します。
+リモートで `wallet_login_start` が成功することを必ず確認してください。2026-09-22 の実デプロイで、Privy Dashboard の Allowed origins にデプロイ済み mcp Worker の URL を登録した上で成功することを確認済みです(workerd は送信サブリクエストで呼び出し側が設定した `Origin` ヘッダを転送します)。Allowed origins への登録を忘れると `Origin not allowed` で、`PRIVY_ORIGIN` 自体が未設定/不一致だと `Must specify origin` で失敗します。
 
 ログ: `pnpm --filter <pkg> exec wrangler tail`
 
@@ -88,16 +88,19 @@ claude mcp add --transport http x402-arc-remote <mcp-url>/mcp
 3. **ウォレット状態(委任キー)は1つの MCP セッションの Durable Object に保存**されます。クライアントがセッションを失う・切り替わると委任キーが失われ、再度ログインして新しいウォレットを作ることになります。旧ウォレットはユーザー所有のため Privy 側に残りますが、この委任キーでは操作できません。取り残されても許容できる額以上を入金しないでください。
 4. **Bazaar discovery 拡張のスキーマ検証は Workers では動きません**。`/weather` へのリクエスト時に `(warn) x402: Route "GET /weather" has an invalid bazaar extension: Schema validation failed: Code generation from strings disallowed for this context` がログに出ます。内部の ajv が `new Function` でスキーマをコンパイルしますが、Workers は動的コード生成を許可しないためです。決済フロー自体(402 応答・検証・決済)には影響しませんが、Bazaar 経由のサービスディスカバリのスキーマ検証は無効化されたまま動きます。
 
-## 7. 検証済み・未検証事項
+## 7. 検証済み事項
 
-2026-09-22 の実デプロイで確認できたこと:
+2026-09-22 の実デプロイで、以下をすべて実際の決済・実メールでのログインまで通して確認できました:
+
 - facilitator: `/health`、`/supported`(`exact` / `upto` を `eip155:5042002` で提供)
 - server: `/health`、`/weather`(402)、`/usage?units=1`(402)。facilitator への `fetch()` は `global_fetch_strictly_public` 適用後に成功
-- mcp: リモート Streamable HTTP セッション全体(`initialize` → `notifications/initialized` → `tools/list` → `tools/call wallet_status`)が動作し、`needsWallet: true` を返した
+- mcp: リモート Streamable HTTP セッション全体(`initialize` → `notifications/initialized` → `tools/list` → 各ツールの `tools/call`)が動作
+- **Privy の実ログイン・ウォレット作成・ポリシー適用の一連の流れ**: 実メールで OTP を送信 → コード検証 → user-owned ウォレット作成まで成功(新規ウォレット `0x39F83d...0A738`)
+- **Privy が WebCrypto で生成した委任キーを受け付けること**: 上記のウォレット作成で使われた委任キーは Workers 上の WebCrypto(`crypto.subtle.generateKey`)で生成されたもの
+- **workerd が送信サブリクエストで `Origin` ヘッダを転送すること**: `PRIVY_ORIGIN` を mcp Worker の URL に設定し、その URL を Privy Dashboard の Allowed origins に登録した状態で `wallet_login_start` が成功(未登録の間は `Origin not allowed` で失敗した)
+- **`/verify` と `/settle` が実決済で正常動作すること**: `exact`(`/weather`, 0.5 USDC)と `upto`(`/usage?units=3`, 0.3 USDC)がいずれも settled、`/usage?units=10`(1.0 USDC 要求、署名上限 0.5 USDC 超過)は `invalid_upto_evm_payload_settlement_exceeds_amount` で想定通り拒否(`transaction` は空文字列でオンチェーン実行なし)。いずれも CPU time exceeded は発生せず
 
-まだ未検証:
+残る注意点(未検証というより、確認していない範囲):
 
-- Free プランでの `/verify` と `/settle` の CPU 時間(実際の決済を伴う E2E が必要。Workers Paid が必要になる可能性)
-- 送信サブリクエストで `Origin` ヘッダが転送されるか(`wallet_login_start` を実メールで実行する必要がある)
-- Privy が WebCrypto で生成した委任キーを受け付けるか
-- Privy の実ログイン・ウォレット作成・ポリシー適用の一連の流れ
+- 上記はいずれも1リクエストずつの軽い負荷での確認です。高頻度アクセス時に Free プランの CPU 上限に達するかは未確認です
+- MCP セッションが切れた場合の再ログイン・新規ウォレット作成の挙動(6章3点目の制約)は設計通り想定されていますが、実際に再現テストはしていません
