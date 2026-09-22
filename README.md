@@ -229,3 +229,12 @@ MAX_AMOUNT_PER_PAYMENT=1000000
 4. Ask Claude Code: "Check my wallet status and pay for /usage?units=3". It will guide you through the email login, then you fund the printed address with testnet USDC and set a budget.
 
 The wallet address and the delegate key are stored in `~/.x402mcp/wallet.json` (mode 0600). The app secret can create wallets for every user of the app, so keep it on your machine or on a server; never share it with workshop attendees.
+
+## Deploy to Cloudflare Workers
+
+### setup secret
+
+```bash
+pnpm --filter facilitator exec wrangler secret put EVM_PRIVATE_KEY
+pnpm --filter x402mcp exec wrangler secret put PRIVY_APP_SECRET
+```

@@ -3,12 +3,14 @@
   "name": "x402-arc-server",
   "main": "src/worker.ts",
   "compatibility_date": "2026-09-21",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "observability": {
     "enabled": true,
     "traces": { "enabled": true }
   },
   "vars": {
-    "FACILITATOR_URL": "http://localhost:8788"
+    "FACILITATOR_URL": "https://x402-arc-facilitator.avp-104-106-107-a78.workers.dev",
+    "ASSET_ADDRESS": "0x3600000000000000000000000000000000000000",
+    "EVM_ADDRESS": "0x9236F15f04156AF4877c8FD71b8E5651eaD49DaF"
   }
 }
