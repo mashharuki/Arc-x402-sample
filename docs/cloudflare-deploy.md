@@ -5,12 +5,14 @@ facilitator / server / mcp(リモートMCP)を Cloudflare Workers で動かす�
 ## 1. 前提
 
 - Cloudflare アカウントと `pnpm exec wrangler login`
-- `/settle` はオンチェーン送信を行うため、Free プランの CPU 時間で足りるかは未検証です。CPU time exceeded が出たら Workers Paid が必要です
+- レシート待ちは I/O であり Workers の CPU 時間を消費しません。Free プランの CPU 上限(10 ms)で問題になり得るのは署名・EIP-712 検証などの計算(`/verify` と `/settle`)です。最初の実 E2E では待ち時間ではなくこれらの CPU 時間を計測してください。CPU time exceeded が出たら Workers Paid が必要です
 - `compatibility_date` は全 `wrangler.jsonc` で `2026-09-21` です。インストール済みの workerd が受け付ける最新日付で、未来日付は拒否されます。wrangler を更新したら日付も更新してください
 
 ## 2. ローカル開発
 
-各パッケージの git 管理外の `.dev.vars` にダミー値を置けば、`/health` `/supported` と MCP の `wallet_status` は動きます。
+各パッケージ(facilitator / server / mcp)で `cp .dev.vars.example .dev.vars` を実行してください(ローカル開発と `cf:typecheck` の両方に必要です。`wrangler types` が `.dev.vars` を読むため)。`.example` はダミー値で、本物の値は `vars` または `wrangler secret put` で設定します。`.dev.vars` は git 管理外です。
+
+`.dev.vars` にダミー値を置けば、`/health` `/supported` と MCP の `wallet_status` は動きます。
 
 | コマンド | ポート |
 |---|---|
@@ -24,7 +26,7 @@ facilitator / server / mcp(リモートMCP)を Cloudflare Workers で動かす�
 
 - [ ] `pkgs/server/wrangler.jsonc` の `vars` に `ASSET_ADDRESS` と `EVM_ADDRESS`(`pkgs/server/.env` と同じ値)
 - [ ] `pkgs/mcp/wrangler.jsonc` の `vars` に `PRIVY_APP_ID` `PRIVY_CLIENT_ID` `ASSET_ADDRESS` `ALLOWED_PAYEES`(`pkgs/mcp/.env` と同じ値。`ALLOWED_PAYEES` は server の `EVM_ADDRESS`)
-- [ ] 必要なら mcp の `PRIVY_ORIGIN`(Privy Dashboard の Allowed origins に登録済みの値。既定は `http://localhost:5173`)
+- [ ] **必須** mcp の `PRIVY_ORIGIN`: 既定の `http://localhost:5173` のままだと、デプロイ済み Worker から privy.io へ `Origin: http://localhost:5173` が送られます。デプロイ済み mcp Worker の https オリジン(または別のオリジン)を設定し、そのオリジンを Privy Dashboard の Allowed origins に登録してください。localhost のままでも動くのは、localhost:5173 が Allowed origins に残っている間だけです
 
 ```jsonc
 // pkgs/server/wrangler.jsonc
@@ -74,6 +76,8 @@ curl -s -i <server-url>/weather        # 402 が返る
 claude mcp add --transport http x402-arc-remote <mcp-url>/mcp
 ```
 
+リモートで `wallet_login_start` が成功することを必ず確認してください。workerd が送信サブリクエストで呼び出し側が設定した `Origin` ヘッダを転送するかは未検証です。除去される場合、ログインは "Must specify origin" で失敗します。
+
 ログ: `pnpm --filter <pkg> exec wrangler tail`
 
 ## 6. 運用上の注意(Operational caveats)
@@ -84,7 +88,8 @@ claude mcp add --transport http x402-arc-remote <mcp-url>/mcp
 
 ## 7. 未検証事項
 
-- Free プランでの `/settle` の CPU 時間(Workers Paid が必要な可能性)
+- Free プランでの `/verify` と `/settle` の CPU 時間(Workers Paid が必要な可能性)
+- 送信サブリクエストで `Origin` ヘッダが転送されるか(`wallet_login_start`)
 - Privy が WebCrypto で生成した委任キーを受け付けるか
 - Privy の実ログイン・ウォレット作成・ポリシー適用の一連の流れ
 

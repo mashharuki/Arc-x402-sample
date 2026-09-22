@@ -20,6 +20,7 @@
     }
   ],
   "vars": {
-    "PAYWALL_API_BASE_URL": "http://localhost:8789"
+    "PAYWALL_API_BASE_URL": "http://localhost:8789",
+    "ALLOWED_ORIGINS": ""
   }
 }

@@ -11,6 +11,13 @@ export default {
     env: Env,
     ctx: ExecutionContext,
   ): Response | Promise<Response> {
+    // 未設定のままだと分かりにくいエラーになるため、先に検証する
+    const privateKey: unknown = env.EVM_PRIVATE_KEY;
+    if (typeof privateKey !== "string" || privateKey.length === 0) {
+      const message = "facilitator misconfigured: missing EVM_PRIVATE_KEY";
+      console.error(message);
+      return Response.json({ error: message }, { status: 500 });
+    }
     app ??= createApp(createFacilitator(env));
     return app.fetch(request, env, ctx);
   },

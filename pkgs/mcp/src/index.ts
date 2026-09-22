@@ -6,7 +6,10 @@ import { createFileStore } from "./store.node.js";
 import { createMcpServer, registerTools } from "./tools.js";
 
 // cwdに依存せず、パッケージ直下の .env を読む(MCPはClaude Codeから任意のcwdで起動されうる)
-dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)) });
+dotenv.config({
+  path: fileURLToPath(new URL("../.env", import.meta.url)),
+  quiet: true,
+});
 
 // MCPのstdioはプロトコル専用なので、ログは必ず stderr に出す(console.error)
 
