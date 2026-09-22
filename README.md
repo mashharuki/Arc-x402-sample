@@ -289,6 +289,8 @@ MAX_AMOUNT_PER_PAYMENT=1000000
 
 4. Ask Claude Code: "Check my wallet status and pay for /usage?units=3". It will guide you through the email login, then you fund the printed address with testnet USDC and set a budget.
 
+   To fund it, use the public [Circle faucet](https://faucet.circle.com/): pick **Arc Testnet**, paste the address, request USDC. No signup, and the limit (20 USDC per address every 2 hours) is far more than this demo needs. Arc's native gas token and the ERC-20 USDC used for payments share the same underlying balance, so this one request covers both gas and the payment amount — no separate "get gas" step.
+
 The wallet address and the delegate key are stored in `~/.x402mcp/wallet.json` (mode 0600). The app secret can create wallets for every user of the app, so keep it on your machine or on a server; never share it with workshop attendees.
 
 ### Try every tool in one prompt

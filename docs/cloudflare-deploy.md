@@ -83,8 +83,8 @@ claude mcp add --transport http x402-arc-remote <mcp-url>/mcp
 
 ## 6. 運用上の注意(Operational caveats)
 
-1. **`/mcp` は認証なしの公開エンドポイント**です。Origin チェックはブラウザしか防げず、誰でもセッションを開始してメール OTP フローを起動できます。レート制限は 30 リクエスト/60 秒/クライアントIP ですが、Cloudflare のロケーション単位であり、IP を変えれば回避できます。任意の強化策として、ワークショップ前に共有 Bearer トークンや OTP 専用の制限の追加を検討してください。
-2. **レート制限は全リクエストを数えます**(SSE の GET も各 JSON-RPC の POST も)。会場の NAT 配下に参加者が多いと1つのバケットを共有し、誤って 429 になることがあります。必要なら `pkgs/mcp/wrangler.jsonc` の `simple.limit` を上げてください。また `ratelimits.namespace_id`(`"4021"`)は Cloudflare アカウント内で一意にしてください。
+1. **`/mcp` は認証なしの公開エンドポイント**です。Origin チェックはブラウザしか防げず、誰でもセッションを開始してメール OTP フローを起動できます。レート制限は既定 300 リクエスト/60 秒/クライアントIP ですが、Cloudflare のロケーション単位であり、IP を変えれば回避できます。任意の強化策として、ワークショップ前に共有 Bearer トークンや OTP 専用の制限の追加を検討してください。
+2. **レート制限は全リクエストを数えます**(SSE の GET も各 JSON-RPC の POST も)。会場の Wi-Fi/NAT 配下に参加者が多いと、Cloudflare には全員が同じ送信元IPに見え、1つのバケットを共有して誤って 429 になることがあります。目安として、[README の「Try every tool in one prompt」](../README.md#try-every-tool-in-one-prompt)の一連の操作(login → verify → set_budget ×2 → pay_and_fetch ×3)で1人あたり概ね10〜15リクエストです。`pkgs/mcp/wrangler.jsonc` の `simple.limit`(既定 300)を「想定参加者数 × 15」程度を目安に事前に引き上げてください(例: 50人なら 750 以上)。`period` は Cloudflare の仕様上 10 か 60 秒のみです。また `ratelimits.namespace_id`(`"4021"`)は Cloudflare アカウント内で一意にしてください。
 3. **ウォレット状態(委任キー)は1つの MCP セッションの Durable Object に保存**されます。クライアントがセッションを失う・切り替わると委任キーが失われ、再度ログインして新しいウォレットを作ることになります。旧ウォレットはユーザー所有のため Privy 側に残りますが、この委任キーでは操作できません。取り残されても許容できる額以上を入金しないでください。
 4. **Bazaar discovery 拡張のスキーマ検証は Workers では動きません**。`/weather` へのリクエスト時に `(warn) x402: Route "GET /weather" has an invalid bazaar extension: Schema validation failed: Code generation from strings disallowed for this context` がログに出ます。内部の ajv が `new Function` でスキーマをコンパイルしますが、Workers は動的コード生成を許可しないためです。決済フロー自体(402 応答・検証・決済)には影響しませんが、Bazaar 経由のサービスディスカバリのスキーマ検証は無効化されたまま動きます。
 
