@@ -12,11 +12,33 @@ Editable source: [`docs/diagrams/architecture.drawio`](docs/diagrams/architectur
 
 ### x402 payment flow
 
-The `exact` scheme (`/weather`) and the `upto` scheme (`/usage?units=N`) both go through the same 402 → sign → verify → settle cycle. The right-hand branch below is the `upto` over-cap case: the facilitator rejects settlement before any on-chain transaction, so no funds move.
+The `exact` scheme (`/weather`) and the `upto` scheme (`/usage?units=N`) both go through the same 402 → sign → verify → settle cycle. The `else` branch below is the `upto` over-cap case, verified against the live deployment: the facilitator rejects settlement before any on-chain transaction, so no funds move.
 
-![x402 payment flow](docs/diagrams/payment-flow.svg)
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Server as server Worker
+    participant Facilitator as facilitator Worker
+    participant Chain as Arc Testnet
 
-Editable source: [`docs/diagrams/payment-flow.drawio`](docs/diagrams/payment-flow.drawio).
+    Agent->>Server: ① GET /weather (no payment)
+    Server-->>Agent: ② 402 Payment Required<br/>accepts: [{scheme, price, asset, network}]
+    Note over Agent: ③ sign payment payload<br/>(EIP-712 authorization, wallet)
+    Agent->>Server: ④ retry GET /weather<br/>+ X-PAYMENT header
+    Server->>Facilitator: ⑤ POST /verify<br/>(signature, cap, scheme)
+    Facilitator-->>Server: valid
+    Note over Server: ⑥ run handler<br/>(e.g. return weather data)
+    Server->>Facilitator: ⑦ POST /settle
+    alt requested amount ≤ signed cap
+        Facilitator->>Chain: ⑧ transferWithAuthorization<br/>(broadcast)
+        Chain-->>Facilitator: tx success
+        Facilitator-->>Server: settled (tx hash)
+        Server-->>Agent: ⑨ 200 OK + body<br/>+ payment receipt (tx hash)
+    else exceeds cap (upto scheme)
+        Facilitator-->>Server: reject: no on-chain tx<br/>(transaction: "")
+        Server-->>Agent: ⑨ 402 settle_failed<br/>invalid_upto_evm_payload_settlement_exceeds_amount
+    end
+```
 
 ## setup
 
