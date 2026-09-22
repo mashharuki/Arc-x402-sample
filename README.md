@@ -6,6 +6,8 @@ This repo is sample code for Arc Testnet x402
 
 Three independent services (facilitator, resource server, MCP server) that run either as local Node processes or as Cloudflare Workers from the same source, plus Privy for wallet auth/signing and Arc Testnet for settlement.
 
+**Why Arc, not Base/Ethereum mainnet?** Arc is Circle's own EVM-compatible Layer 1 — a standalone chain with its own consensus and settlement, not an Ethereum L2/rollup — purpose-built for stablecoin finance: USDC as the native gas asset and sub-second deterministic finality. Being EVM-compatible means everything here (viem, EIP-712 typed-data signing, EIP-3009 `transferWithAuthorization`, Solidity-style token contracts) is the same tooling any Ethereum/Base x402 integration would use; only the RPC URL, chain ID and USDC contract address change. Nothing in this repo's x402 logic is Arc-specific.
+
 ![Architecture](docs/diagrams/architecture.svg)
 
 Editable source: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawio) (open in [diagrams.net](https://app.diagrams.net) or the [VS Code Draw.io Integration](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio) extension).
