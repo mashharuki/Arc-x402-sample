@@ -6,7 +6,10 @@
   "description": "MCP server that lets Claude Code run the x402 demo with a Privy user-owned wallet",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",
+    "cf:dev": "wrangler dev --port 8790",
+    "cf:deploy": "wrangler deploy"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
