@@ -58,3 +58,41 @@ export const saveWalletState = async (
     return fail(`failed to save ${file}: ${toMessage(error)}`);
   }
 };
+
+export type WalletStore = {
+  load: () => Promise<Result<WalletState | undefined>>;
+  save: (state: WalletState) => Promise<Result<null>>;
+};
+
+/** ローカルのファイルに保存するストア(stdio用) */
+export const createFileStore = (home: string | undefined): WalletStore => ({
+  load: () => loadWalletState(home),
+  save: (state) => saveWalletState(home, state),
+});
+
+/** Durable Objectストレージ等のKey-Valueに保存するストア(Workers用) */
+export type KeyValueStorage = {
+  get: <T>(key: string) => Promise<T | undefined>;
+  put: (key: string, value: unknown) => Promise<void>;
+};
+
+const WALLET_KEY = "wallet";
+
+export const createKvStore = (storage: KeyValueStorage): WalletStore => ({
+  load: async () => {
+    const raw = await storage.get<unknown>(WALLET_KEY);
+    if (raw === undefined) return ok(undefined);
+    const parsed = walletStateSchema.safeParse(raw);
+    return parsed.success
+      ? ok(parsed.data)
+      : fail("invalid wallet state in storage");
+  },
+  save: async (state) => {
+    try {
+      await storage.put(WALLET_KEY, state);
+      return ok(null);
+    } catch (error) {
+      return fail(`failed to save wallet state: ${toMessage(error)}`);
+    }
+  },
+});
