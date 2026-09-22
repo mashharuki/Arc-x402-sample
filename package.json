@@ -13,7 +13,13 @@
     "x402mcp": "pnpm --filter x402mcp",
     "setup": "sh ./scripts/setup.sh",
     "start": "sh ./scripts/start.sh",
-    "stop": "sh ./scripts/stop.sh"
+    "stop": "sh ./scripts/stop.sh",
+    "cf:dev:facilitator": "pnpm --filter facilitator run cf:dev",
+    "cf:dev:server": "pnpm --filter x402server run cf:dev",
+    "cf:dev:mcp": "pnpm --filter x402mcp run cf:dev",
+    "deploy:facilitator": "pnpm --filter facilitator run cf:deploy",
+    "deploy:server": "pnpm --filter x402server run cf:deploy",
+    "deploy:mcp": "pnpm --filter x402mcp run cf:deploy"
   },
   "keywords": [],
   "author": "",

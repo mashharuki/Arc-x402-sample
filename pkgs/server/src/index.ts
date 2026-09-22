@@ -1,56 +1,18 @@
 import { serve } from "@hono/node-server";
-import { paymentMiddleware, setSettlementOverrides } from "@x402/hono";
-import { Hono } from "hono";
-import { USAGE_UNIT_PRICE, x402Config } from "./config";
-import { resourceServer } from "./resourceServer";
+import dotenv from "dotenv";
+import { createApp } from "./app";
 
-// Honoインスタンスの作成
-const app = new Hono();
+dotenv.config();
 
-// x402ミドルウェアの設定
-app.use(paymentMiddleware(x402Config, resourceServer));
+const { FACILITATOR_URL, ASSET_ADDRESS, EVM_ADDRESS } = process.env;
+if (!FACILITATOR_URL || !ASSET_ADDRESS || !EVM_ADDRESS) {
+  console.error(
+    "❌ FACILITATOR_URL, ASSET_ADDRESS and EVM_ADDRESS environment variables are required",
+  );
+  process.exit(1);
+}
 
-// エンドポイントの設定
-app.get("/health", (c) => {
-  return c.json({
-    report: {
-      status: "OK",
-    },
-  });
+serve({
+  fetch: createApp({ FACILITATOR_URL, ASSET_ADDRESS, EVM_ADDRESS }).fetch,
+  port: 4021,
 });
-
-app.get("/weather", (c) => {
-  return c.json({
-    report: {
-      weather: "sunny",
-      temperature: 70,
-    },
-  });
-});
-
-// 1リクエストで受け付ける最大ユニット数(BigInt計算の入力を制限する)
-const MAX_UNITS = 1000;
-
-/**
- * 使用量課金(upto)のサンプル
- * units × 単価を実際の決済額として指定する。
- * 検証のため、認可上限(USAGE_MAX_AMOUNT)を超える場合も丸めずにそのまま指定する。
- * 上限超過の決済はPermit2/facilitator側で拒否されることを確認するための挙動。
- */
-app.get("/usage", (c) => {
-  const units = Number(c.req.query("units") ?? "1");
-
-  if (!Number.isInteger(units) || units < 1 || units > MAX_UNITS) {
-    return c.json(
-      { error: `units must be an integer in 1..${MAX_UNITS}` },
-      400,
-    );
-  }
-
-  const amount = (BigInt(units) * USAGE_UNIT_PRICE).toString();
-  setSettlementOverrides(c, { amount });
-
-  return c.json({ report: { units, charged: amount } });
-});
-
-serve({ fetch: app.fetch, port: 4021 });

@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "x402-arc-mcp",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": true }
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "MCP_OBJECT", "class_name": "X402Mcp" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["X402Mcp"] }],
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "4021",
+      "simple": { "limit": 30, "period": 60 }
+    }
+  ],
+  "vars": {
+    "PAYWALL_API_BASE_URL": "http://localhost:8789",
+    "ALLOWED_ORIGINS": ""
+  }
+}

@@ -1,4 +1,3 @@
-import { generateKeyPairSync } from "node:crypto";
 import Privy from "@privy-io/js-sdk-core";
 import { PrivyClient } from "@privy-io/node";
 import { createViemAccount, type PrivyViemAccount } from "@privy-io/node/viem";
@@ -96,19 +95,24 @@ export const verifyLoginCode = async (
   }
 };
 
+const toBase64 = (buffer: ArrayBuffer): string =>
+  btoa(String.fromCharCode(...new Uint8Array(buffer)));
+
 /** 委任キー(P-256)を生成する。公開鍵は base64 DER(SPKI)、秘密鍵は base64 PKCS8 */
-const generateDelegateKey = (): { publicKey: string; privateKey: string } => {
-  const { publicKey, privateKey } = generateKeyPairSync("ec", {
-    namedCurve: "P-256",
-  });
-  return {
-    publicKey: publicKey
-      .export({ type: "spki", format: "der" })
-      .toString("base64"),
-    privateKey: privateKey
-      .export({ type: "pkcs8", format: "der" })
-      .toString("base64"),
-  };
+const generateDelegateKey = async (): Promise<{
+  publicKey: string;
+  privateKey: string;
+}> => {
+  const pair = await crypto.subtle.generateKey(
+    { name: "ECDSA", namedCurve: "P-256" },
+    true,
+    ["sign", "verify"],
+  );
+  const [spki, pkcs8] = await Promise.all([
+    crypto.subtle.exportKey("spki", pair.publicKey),
+    crypto.subtle.exportKey("pkcs8", pair.privateKey),
+  ]);
+  return { publicKey: toBase64(spki), privateKey: toBase64(pkcs8) };
 };
 
 /**
@@ -125,7 +129,7 @@ export const provisionWallet = async (
   session: LoginSession,
 ): Promise<Result<WalletState>> => {
   try {
-    const delegate = generateDelegateKey();
+    const delegate = await generateDelegateKey();
 
     const quorum = await privy.keyQuorums().create({
       // Privyの上限は50文字。did:privy:... は長いので末尾だけ使う
