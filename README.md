@@ -267,8 +267,30 @@ Verify:
 curl -s <facilitator-url>/supported
 curl -s <server-url>/health
 curl -s -i <server-url>/weather        # expect 402
-claude mcp add --transport http x402-arc-remote <mcp-url>/mcp
 ```
+
+Register the remote mcp Worker with Claude Code. Either way works:
+
+- With the CLI:
+
+  ```bash
+  claude mcp add --transport http x402-arc-demo <mcp-url>/mcp
+  ```
+
+- With an MCP config file (`.mcp.json` at the repo root, or `.claude/.mcp.json` passed via `claude --mcp-config .claude/.mcp.json`):
+
+  ```json
+  {
+    "mcpServers": {
+      "x402-arc-demo": {
+        "type": "http",
+        "url": "<mcp-url>/mcp"
+      }
+    }
+  }
+  ```
+
+Unlike the stdio setup, there is no local `.env` to keep secrets in: `PRIVY_APP_SECRET` lives only as a Wrangler secret on the mcp Worker, so this config never needs to hold credentials.
 
 ### Destroy from Cloudflare Workers
 
