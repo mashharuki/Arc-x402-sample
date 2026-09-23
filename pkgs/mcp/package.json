@@ -5,6 +5,7 @@
   "type": "module",
   "description": "MCP server that lets Claude Code run the x402 demo with a Privy user-owned wallet",
   "scripts": {
+    "build": "tsc -p tsconfig.worker.json",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",

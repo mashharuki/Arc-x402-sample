@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "tsc -p tsconfig.worker.json",
     "dev": "tsx watch src/index.ts",
     "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",
     "cf:dev": "wrangler dev --port 8789",

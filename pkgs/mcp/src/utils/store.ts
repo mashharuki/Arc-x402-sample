@@ -29,6 +29,11 @@ export type KeyValueStorage = {
 
 const WALLET_KEY = "wallet";
 
+/**
+ * KeyValueStorageを用いてWalletStoreを作成する
+ * @param storage 
+ * @returns 
+ */
 export const createKvStore = (storage: KeyValueStorage): WalletStore => ({
   load: async () => {
     const raw = await storage.get<unknown>(WALLET_KEY);

@@ -2,18 +2,24 @@ import type { PrivyViemAccount } from "@privy-io/node/viem";
 import { ExactEvmScheme } from "@x402/evm/exact/client";
 import { UptoEvmScheme } from "@x402/evm/upto/client";
 import { wrapFetchWithPayment, x402Client, x402HTTPClient } from "@x402/fetch";
-import { CHAIN_ID } from "./constants.js";
-import type { Env } from "./env.js";
-import { fail, ok, type Result, toMessage } from "./result.js";
+import { CHAIN_ID } from "../utils/constants.js";
+import type { Env } from "../utils/env.js";
+import { fail, ok, type Result, toMessage } from "../utils/result.js";
 
-/** 支払い用のx402クライアント。署名前に1回あたりの上限をclient側でも確認する */
+/** 
+ * 支払い用のx402クライアント。
+ * 署名前に1回あたりの上限をclient側でも確認する 
+ */
 export const createPaymentClient = (
   signer: PrivyViemAccount,
   env: Env,
 ): x402Client => {
+  // x402Clientを作成
   const client = new x402Client();
+  // 署名スキームを登録する。Exactは1回あたりの正確な金額、Uptoは上限までの任意の金額で支払える
   client.register(CHAIN_ID, new ExactEvmScheme(signer));
   client.register(CHAIN_ID, new UptoEvmScheme(signer));
+  // 1回あたりの上限を設定する。これにより、ユーザーが意図しない大きな支払いを防ぐ
   client.setSpendControls({
     allowedAssets: [
       {
@@ -35,16 +41,21 @@ export type PaidResponse = {
   body: unknown;
 };
 
-/** x402のリソースを取得する。402なら署名して再送する */
+/** 
+ * x402のリソースを取得する。
+ * 402なら署名して再送する
+ */
 export const fetchPaid = async (
   client: x402Client,
   url: string,
 ): Promise<Result<PaidResponse>> => {
   try {
+    // fetchをラップして、402なら署名して再送する
     const response = await wrapFetchWithPayment(fetch, client)(url);
     const text = await response.text();
     const body = parseJson(text);
 
+    // x402HTTPClientでレスポンスを解析する。402なら署名して再送する
     const result = new x402HTTPClient(client).parsePaymentResult({
       status: response.status,
       getHeader: (name: string) => response.headers.get(name) ?? undefined,

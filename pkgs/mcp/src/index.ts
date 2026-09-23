@@ -1,9 +1,9 @@
-import { fileURLToPath } from "node:url";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import dotenv from "dotenv";
-import { parseEnv } from "./env.js";
-import { createFileStore } from "./store.node.js";
-import { createMcpServer, registerTools } from "./tools.js";
+import { fileURLToPath } from "node:url";
+import { createMcpServer, registerTools } from "./lib/tools.js";
+import { parseEnv } from "./utils/env.js";
+import { createFileStore } from "./utils/store.node.js";
 
 // cwdに依存せず、パッケージ直下の .env を読む(MCPはClaude Codeから任意のcwdで起動されうる)
 dotenv.config({

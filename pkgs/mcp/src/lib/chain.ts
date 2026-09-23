@@ -1,8 +1,8 @@
 import type { PrivyViemAccount } from "@privy-io/node/viem";
 import { PERMIT2_ADDRESS } from "@x402/evm";
 import { createPublicClient, createWalletClient, erc20Abi, http } from "viem";
-import { CHAIN } from "./constants.js";
-import { fail, ok, type Result, toMessage } from "./result.js";
+import { CHAIN } from "../utils/constants.js";
+import { fail, ok, type Result, toMessage } from "../utils/result.js";
 
 const publicClient = createPublicClient({ chain: CHAIN, transport: http() });
 
@@ -13,6 +13,12 @@ export type WalletBalances = {
   allowance: string;
 };
 
+/**
+ * ERC20トークンの残高とPermit2へのallowanceを取得する。
+ * @param owner 
+ * @param token 
+ * @returns 
+ */
 export const readBalances = async (
   owner: `0x${string}`,
   token: `0x${string}`,

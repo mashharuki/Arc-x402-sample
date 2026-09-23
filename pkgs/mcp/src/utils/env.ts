@@ -4,6 +4,7 @@ import { fail, ok, type Result } from "./result.js";
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/, "must be a 0x address");
 const atomic = z.string().regex(/^\d+$/, "must be an integer (atomic units)");
 
+// 環境変数のスキーマ
 const envSchema = z.object({
   PRIVY_APP_ID: z.string().min(1),
   PRIVY_APP_SECRET: z.string().min(1),

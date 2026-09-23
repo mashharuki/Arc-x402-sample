@@ -40,7 +40,9 @@ type DomainField = Extract<
 
 type TypedDataTypes = Record<string, { name: string; type: string }[]>;
 
-/** x402の型定数はreadonlyなので、ポリシーに渡せる変更可能な形にコピーする */
+/** 
+ * x402の型定数はreadonlyなので、ポリシーに渡せる変更可能な形にコピーする
+ */
 const toMutableTypes = (
   types: Record<string, readonly { name: string; type: string }[]>,
 ): TypedDataTypes =>
@@ -72,7 +74,9 @@ const messageCondition = (
   value,
 });
 
-/** uptoスキーム: Permit2(PermitWitnessTransferFrom)の署名 */
+/** 
+ * uptoスキーム: Permit2(PermitWitnessTransferFrom)の署名
+ */
 const uptoRule = (input: PolicyInput): Rule => {
   const types = toMutableTypes(uptoPermit2WitnessTypes);
   const primary = "PermitWitnessTransferFrom";
@@ -103,7 +107,9 @@ const uptoRule = (input: PolicyInput): Rule => {
   };
 };
 
-/** exactスキーム: ERC-3009(TransferWithAuthorization)の署名 */
+/** 
+ * exactスキーム: ERC-3009(TransferWithAuthorization)の署名
+ */
 const exactRule = (input: PolicyInput): Rule => {
   const types = toMutableTypes(authorizationTypes);
   const primary = "TransferWithAuthorization";
@@ -120,7 +126,9 @@ const exactRule = (input: PolicyInput): Rule => {
   };
 };
 
-/** 予算の承認(approve)のためのトランザクション署名: 決済トークンへの送信だけを許可 */
+/** 
+ * 予算の承認(approve)のためのトランザクション署名: 決済トークンへの送信だけを許可
+ */
 const approveRule = (input: PolicyInput): Rule => ({
   name: "Sign transactions to the payment token only",
   method: "eth_signTransaction",
@@ -147,6 +155,12 @@ const approveRule = (input: PolicyInput): Rule => ({
   ],
 });
 
+/**
+ * ポリシーを組み立てる。
+ * x402のuptoスキームとexactスキームの両方を含む。
+ * @param input 
+ * @returns 
+ */
 export const buildPolicy = (input: PolicyInput): PolicyBody => ({
   version: "1.0",
   name: "x402 agent: capped payments to allowed payees",

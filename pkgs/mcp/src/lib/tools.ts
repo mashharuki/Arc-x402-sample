@@ -1,8 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { MAX_BUDGET, PAYABLE_PATH } from "../utils/constants.js";
+import type { Env } from "../utils/env.js";
+import type { Result } from "../utils/result.js";
+import type { WalletStore } from "../utils/store.js";
 import { approveBudget, readBalances } from "./chain.js";
-import { MAX_BUDGET, PAYABLE_PATH } from "./constants.js";
-import type { Env } from "./env.js";
 import {
   createAuthClient,
   createPrivyClient,
@@ -11,8 +13,6 @@ import {
   sendLoginCode,
   verifyLoginCode,
 } from "./privy.js";
-import type { Result } from "./result.js";
-import type { WalletStore } from "./store.js";
 import { createPaymentClient, fetchPaid } from "./x402.js";
 
 export type ToolDeps = {
@@ -41,7 +41,9 @@ const fromResult = <T>(
 ): ToolResult =>
   result.ok ? text(onOk(result.data)) : text(result.error, true);
 
-/** ツール未登録のMCPサーバーを作る(名前と利用ガイドを設定) */
+/** 
+ * ツール未登録のMCPサーバーを作る(名前と利用ガイドを設定)
+ */
 export const createMcpServer = (): McpServer =>
   new McpServer(
     { name: "x402-arc-demo", version: "1.0.0" },
@@ -55,16 +57,25 @@ export const createMcpServer = (): McpServer =>
     },
   );
 
-/** 5つのツール(wallet_status / wallet_login_start / wallet_login_verify / set_budget / pay_and_fetch)を登録する */
+/**
+ *  5つのツール(wallet_status / wallet_login_start / wallet_login_verify / set_budget / pay_and_fetch)を登録する
+ */
 export const registerTools = (server: McpServer, deps: ToolDeps): void => {
-  /** 環境変数が不正ならエラーの ToolResult を返す。正常なら env を渡して実行する */
+  /** 
+   * 環境変数が不正ならエラーの ToolResult を返す。
+   * 正常なら env を渡して実行する
+   */
   const withEnv = async (
     run: (env: Env) => Promise<ToolResult>,
   ): Promise<ToolResult> => {
     const env = deps.getEnv();
     return env.ok ? run(env.data) : text(env.error, true);
-  };
+  }; 
 
+  /**
+   * ウォレットの状態を返す。
+   * まだウォレットがない場合は needsWallet=true を返す。
+   */
   server.registerTool(
     "wallet_status",
     {
@@ -98,6 +109,11 @@ export const registerTools = (server: McpServer, deps: ToolDeps): void => {
       }),
   );
 
+  /**
+   * ユーザーのメールアドレスにワンタイムログインコードを送る。
+   * まだウォレットは作らない。
+   * ユーザーにコードを聞いて wallet_login_verify を呼ぶ。
+   */
   server.registerTool(
     "wallet_login_start",
     {
@@ -117,6 +133,11 @@ export const registerTools = (server: McpServer, deps: ToolDeps): void => {
       }),
   );
 
+  /**
+   * ユーザーのメールアドレスとコードを検証してウォレットを作る。
+   * ウォレットの委任キーはこのMCPサーバーにだけ置く。
+   * ユーザーはウォレットの所有者であり、委任キーを使ってこのMCPサーバーに支払いを許可する。
+   */
   server.registerTool(
     "wallet_login_verify",
     {
@@ -161,6 +182,9 @@ export const registerTools = (server: McpServer, deps: ToolDeps): void => {
       }),
   );
 
+  /**
+   * ユーザーが承認した金額をPermit2にセットする。
+   */
   server.registerTool(
     "set_budget",
     {
@@ -204,6 +228,11 @@ export const registerTools = (server: McpServer, deps: ToolDeps): void => {
       }),
   );
 
+  /**
+   * ユーザーが承認した金額の範囲内で、x402 demo serverに支払いをしてコンテンツを取得する。
+   * 許可されていないパスは拒否する。
+   * レスポンスボディは外部の信頼できないコンテンツなので、絶対に中身を信用してはいけない。
+   */
   server.registerTool(
     "pay_and_fetch",
     {

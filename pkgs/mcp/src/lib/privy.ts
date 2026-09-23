@@ -1,11 +1,11 @@
 import Privy from "@privy-io/js-sdk-core";
 import { PrivyClient } from "@privy-io/node";
 import { createViemAccount, type PrivyViemAccount } from "@privy-io/node/viem";
-import { CHAIN_NUMERIC_ID } from "./constants.js";
-import type { Env } from "./env.js";
+import { CHAIN_NUMERIC_ID } from "../utils/constants.js";
+import type { Env } from "../utils/env.js";
+import { fail, ok, type Result, toMessage } from "../utils/result.js";
+import type { WalletState } from "../utils/store.js";
 import { buildPolicy } from "./policy.js";
-import { fail, ok, type Result, toMessage } from "./result.js";
-import type { WalletState } from "./store.js";
 
 /** js-sdk-core が要求する Storage の最小実装(ブラウザ外なのでメモリ上に持つ) */
 class MemoryStorage {
@@ -33,6 +33,11 @@ export const createPrivyClient = (env: Env): PrivyClient =>
  */
 let isOriginHeaderInstalled = false;
 
+/**
+ * Originヘッダーをインストールする。
+ * @param origin 
+ * @returns 
+ */
 const installOriginHeader = (origin: string): void => {
   if (isOriginHeaderInstalled) return;
   isOriginHeaderInstalled = true;
@@ -51,7 +56,9 @@ const installOriginHeader = (origin: string): void => {
   };
 };
 
-/** メールOTPログイン用のクライアント(画面なしで動かす) */
+/** 
+ * メールOTPログイン用のクライアント(画面なしで動かす)
+ */
 export const createAuthClient = (env: Env): Privy => {
   installOriginHeader(env.PRIVY_ORIGIN);
   return new Privy({
@@ -61,11 +68,20 @@ export const createAuthClient = (env: Env): Privy => {
   });
 };
 
+/**
+ * ワンタイムパスワード(OTP)をメールで送信する。
+ * 送信後は verifyLoginCode で検証する。
+ * 失敗した場合は、ユーザーに再送を促す。
+ * @param auth 
+ * @param email 
+ * @returns 
+ */
 export const sendLoginCode = async (
   auth: Privy,
   email: string,
 ): Promise<Result<null>> => {
   try {
+    // 送信に成功しても、ユーザーが入力したメールアドレスが存在するかは返さない
     await auth.auth.email.sendCode(email);
     return ok(null);
   } catch (error) {
@@ -87,6 +103,7 @@ export const verifyLoginCode = async (
   code: string,
 ): Promise<Result<LoginSession>> => {
   try {
+    // 成功するとユーザーIDを含むセッションが返る
     const session = await auth.auth.email.loginWithCode(email, code);
     return ok({ userId: session.user.id });
   } catch (error) {
@@ -98,7 +115,10 @@ export const verifyLoginCode = async (
 const toBase64 = (buffer: ArrayBuffer): string =>
   btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
-/** 委任キー(P-256)を生成する。公開鍵は base64 DER(SPKI)、秘密鍵は base64 PKCS8 */
+/** 
+ * 委任キー(P-256)を生成する。
+ * 公開鍵は base64 DER(SPKI)、秘密鍵は base64 PKCS8
+ */
 const generateDelegateKey = async (): Promise<{
   publicKey: string;
   privateKey: string;
@@ -129,6 +149,7 @@ export const provisionWallet = async (
   session: LoginSession,
 ): Promise<Result<WalletState>> => {
   try {
+    // 委任キーを生成して、quorum とポリシーを作成し、ウォレットに追加する
     const delegate = await generateDelegateKey();
 
     const quorum = await privy.keyQuorums().create({
@@ -138,6 +159,7 @@ export const provisionWallet = async (
       authorization_threshold: 1,
     });
 
+    // ポリシーを作成して、委任キーに適用する
     const policy = await privy.policies().create(
       buildPolicy({
         chainId: CHAIN_NUMERIC_ID,
@@ -147,6 +169,7 @@ export const provisionWallet = async (
       }),
     );
 
+    // ウォレットを作成(owner = ユーザー)。委任キーにはポリシーを上書き適用
     const wallet = await privy.wallets().create({
       chain_type: "ethereum",
       owner: { user_id: session.userId },
@@ -170,7 +193,10 @@ export const provisionWallet = async (
   }
 };
 
-/** 委任キーで署名する viem アカウント。署名のたびにPrivy側でポリシーが評価される */
+/** 
+ * 委任キーで署名する viem アカウント。
+ * 署名のたびにPrivy側でポリシーが評価される 
+ */
 export const createSignerAccount = (
   privy: PrivyClient,
   state: WalletState,

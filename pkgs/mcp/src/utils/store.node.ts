@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { fail, ok, type Result, toMessage } from "./result.js";
 import {
   type WalletState,
-  type WalletStore,
   walletStateSchema,
+  type WalletStore,
 } from "./store.js";
 
 const stateFile = (home: string | undefined): string =>
