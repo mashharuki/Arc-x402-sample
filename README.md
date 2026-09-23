@@ -56,6 +56,14 @@ pnpm run setup
 
 1. start facilitator 
 
+Set `pkgs/facilitator/.env`:
+
+```dotenv
+EVM_PRIVATE_KEY=0x<facilitator-private-key>
+```
+
+Fund the facilitator wallet with Arc Testnet USDC for transaction fees.
+
 ```bash
 pnpm facilitator run dev
 ```
@@ -94,6 +102,16 @@ curl http://localhost:4022/supported | jq
 
 2. x402 backend server(Resource server)
 
+Set `pkgs/server/.env`. `EVM_ADDRESS` is the wallet address that receives payments.
+
+```dotenv
+FACILITATOR_URL=http://localhost:4022
+EVM_ADDRESS=0x<recipient-wallet-address>
+ASSET_ADDRESS=0x3600000000000000000000000000000000000000
+```
+
+Keep the facilitator running and start the server in a separate terminal.
+
 ```bash
 pnpm x402server run dev
 ```
@@ -113,6 +131,20 @@ curl http://localhost:4021/health | jq
 ```
 
 3. run client script
+
+Set `pkgs/client/.env`:
+
+```dotenv
+PAYWALL_API_BASE_URL=http://localhost:4021
+PAYWALL_PATH=/weather
+EVM_PRIVATE_KEY=0x<payer-private-key>
+ASSET_ADDRESS=0x3600000000000000000000000000000000000000
+CHAIN_ID=5042002
+```
+
+Fund the payer wallet with at least **0.5 Arc Testnet USDC** before running the client. Each successful `/weather` request costs 0.5 USDC. Insufficient funds return `402` with `invalid_exact_evm_insufficient_balance`.
+
+Keep the facilitator and server running and run the client in a separate terminal.
 
 ```bash
 pnpm x402client run dev
