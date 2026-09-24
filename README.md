@@ -348,7 +348,7 @@ Expected: steps 1–2 settle normally. Step 3's payment is sent (the signature o
 
 ## Deploy to Cloudflare Workers
 
-Before uploading secrets, sign in to a Cloudflare account with a Workers Free plan and configure its [`workers.dev` subdomain](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/) in Workers & Pages if it is not set yet. Log in with Wrangler and confirm the account you will deploy to:
+Before uploading secrets, confirm your Cloudflare account is on the Workers Free plan. Open [Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages) and set your `workers.dev` subdomain under **Your subdomain → Change** if it is not set yet. Then log in with Wrangler and confirm the account you will deploy to:
 
 ```bash
 pnpm --filter facilitator exec wrangler login
