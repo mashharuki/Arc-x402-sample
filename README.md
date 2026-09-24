@@ -142,7 +142,7 @@ ASSET_ADDRESS=0x3600000000000000000000000000000000000000
 CHAIN_ID=5042002
 ```
 
-Fund the payer wallet with at least **0.5 Arc Testnet USDC** before running the client. Each successful `/weather` request costs 0.5 USDC. Insufficient funds return `402` with `invalid_exact_evm_insufficient_balance`.
+Fund the payer wallet with at least **0.5 Arc Testnet USDC** before running the client. Use the [Circle faucet](https://faucet.circle.com/): select **Arc Testnet**, request USDC, and enter the public address of the wallet whose key you set as `EVM_PRIVATE_KEY`. Each successful `/weather` request costs 0.5 USDC. Insufficient funds return `402` with `invalid_exact_evm_insufficient_balance`.
 
 Keep the facilitator and server running and run the client in a separate terminal.
 
