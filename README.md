@@ -324,7 +324,7 @@ MAX_AMOUNT_PER_PAYMENT=1000000
 
    Secrets stay in `pkgs/mcp/.env`; do not put `PRIVY_APP_SECRET` in the config file. After changing the MCP code or `.env`, reconnect with `/mcp` so the server restarts.
 
-   After connecting, ask Claude Code to call `wallet_status` before starting a payment. A new setup should return `needsWallet: true`; an existing setup should show its wallet address, balance, and allowance. If the tool reports missing configuration, check `pkgs/mcp/.env`. The Allowed origin is checked when the email login begins.
+   After connecting, call `wallet_status`. It returns `needsWallet: true` for a new wallet, or the address, balance, and allowance for an existing one. If it reports missing settings, check `pkgs/mcp/.env`.
 
 4. Ask Claude Code: "Check my wallet status and pay for /usage?units=3". It will guide you through the email login, then you fund the printed address with testnet USDC and set a budget.
 
@@ -334,7 +334,7 @@ The wallet address and the delegate key are stored in `~/.x402mcp/wallet.json` (
 
 ### Try every tool in one prompt
 
-`set_budget` approves a total USDC allowance for Permit2, which the `upto` payments use. It does not prepay for the requests, and an `exact` payment such as `/weather` reduces the wallet balance without reducing this allowance. Each `/usage?units=N` request simulates metered billing: the caller supplies `units` (no usage is measured), and the server asks to settle `units × 0.1 USDC`. The signed cap for one `upto` payment is 0.5 USDC, separate from the total Permit2 allowance. With a 2 USDC allowance, `/usage?units=3` settles 0.3 USDC and leaves 1.7 USDC of allowance; `/usage?units=10` asks for 1.0 USDC, exceeds the per-payment cap, and changes neither balance nor allowance.
+`set_budget` sets the total allowance for `upto` payments (2 USDC in this demo). `/usage?units=N` simulates metered billing at 0.1 USDC per unit; `units` is supplied by the caller, not measured. Three units cost 0.3 USDC and leave 1.7 USDC of allowance. Ten units exceed the 0.5 USDC per-payment cap, so nothing is charged. `/weather` uses `exact`: it charges 0.5 USDC without reducing this allowance.
 
 Once connected (stdio `x402-arc-demo` or the remote `x402-arc-demo` over HTTP, same tools either way), paste this into Claude Code to exercise all five tools in one pass, including the `upto` cap-exceeded rejection from the [Guardrails](#guardrails-with-the-upto-scheme) section above:
 
@@ -415,7 +415,7 @@ Register the remote mcp Worker with Claude Code. Either way works:
 
 Unlike the stdio setup, there is no local `.env` to keep secrets in: `PRIVY_APP_SECRET` lives only as a Wrangler secret on the mcp Worker, so this config never needs to hold credentials.
 
-After connecting to the remote MCP server, call `wallet_status` to confirm the tool is reachable and its required configuration is present. A new remote session should return `needsWallet: true` before email login; the Privy Allowed origin is checked when login begins.
+After connecting to the remote MCP server, call `wallet_status`. A new remote session should return `needsWallet: true` before email login.
 
 ### Destroy from Cloudflare Workers
 
