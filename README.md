@@ -281,7 +281,7 @@ The [Try every tool in one prompt](#try-every-tool-in-one-prompt) script below i
 ### Setup
 
 1. In the [Privy dashboard](https://dashboard.privy.io), select the app you will use for this demo:
-   - Enable **Email** as a login method.
+   - Confirm **Email** login is enabled.
    - Copy the app's **App ID** and **App Secret**, then create or select a client in the same app and copy its **Client ID**. These become `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, and `PRIVY_CLIENT_ID` below. Keep the App Secret out of Git.
    - Add `http://localhost:5173` to **Allowed origins**. The Node MCP server sends this value as its `Origin`; if it is not registered, Privy rejects the request.
 2. Copy `pkgs/mcp/.env.example` to `pkgs/mcp/.env` (gitignored) and fill in these keys. Set `ALLOWED_PAYEES` to the same recipient address as `EVM_ADDRESS` in `pkgs/server/.env`:
