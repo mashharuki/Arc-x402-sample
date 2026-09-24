@@ -167,7 +167,7 @@ Payment settled: {
 
 ## Guardrails with the `upto` scheme
 
-`GET /usage?units=N` on the resource server uses the `upto` scheme (Permit2 based). The client authorizes a **maximum** (0.5 USDC) and the server settles only what was actually consumed (`units` x 0.1 USDC).
+`GET /usage?units=N` on the resource server uses the `upto` scheme (Permit2 based). The client authorizes a **maximum** (0.5 USDC), and the server requests `units` x 0.1 USDC. This demo takes `units` from the request; it does not measure actual usage.
 
 Spending is limited by three layers:
 
@@ -176,6 +176,8 @@ Spending is limited by three layers:
 | Per payment (client) | The client refuses to sign a payment above `MAX_AMOUNT_PER_PAYMENT` (default `1000000` = 1 USDC) | `pkgs/client/src/config.ts` |
 | Per payment (signature) | The Permit2 signature authorizes at most the `upto` maximum; the facilitator rejects a larger settlement | `pkgs/server/src/config.ts` |
 | Total budget (on-chain) | The USDC allowance granted to Permit2 (never `maxUint256`) | `pkgs/client/src/approve.ts` |
+
+The MCP tool `set_budget` sets this Permit2 allowance. It applies to `/usage` (`upto`); `/weather` (`exact`) reduces the wallet balance without using the allowance.
 
 The client needs a small amount of USDC for gas, because the `upto` flow does not use gas-sponsoring extensions.
 
@@ -333,8 +335,6 @@ MAX_AMOUNT_PER_PAYMENT=1000000
 The wallet address and the delegate key are stored in `~/.x402mcp/wallet.json` (mode 0600). The app secret can create wallets for every user of the app, so keep it on your machine or on a server; never share it with workshop attendees.
 
 ### Try every tool in one prompt
-
-`set_budget` sets the total allowance for `upto` payments (2 USDC in this demo). `/usage?units=N` simulates metered billing at 0.1 USDC per unit; `units` is supplied by the caller, not measured. Three units cost 0.3 USDC and leave 1.7 USDC of allowance. Ten units exceed the 0.5 USDC per-payment cap, so nothing is charged. `/weather` uses `exact`: it charges 0.5 USDC without reducing this allowance.
 
 Once connected (stdio `x402-arc-demo` or the remote `x402-arc-demo` over HTTP, same tools either way), paste this into Claude Code to exercise all five tools in one pass, including the `upto` cap-exceeded rejection from the [Guardrails](#guardrails-with-the-upto-scheme) section above:
 
