@@ -11,13 +11,16 @@ export const createApp = (env: ServerEnv): Hono => {
   // Honoインスタンスの作成
   const app = new Hono();
 
-  // x402ミドルウェアの設定
+  // ===== STEP 2: x402ミドルウェア =====
+  // ワークショップのStep 1ではこのブロックをコメントアウトして起動する(課金されず、誰でもアクセスできる)。
+  // Step 2でコメントアウトを外すと、402チャレンジ→署名→検証→決済のフローが有効になる。
   app.use(
     paymentMiddleware(
       createX402Config(env),
       createResourceServer(env.FACILITATOR_URL),
     ),
   );
+  // ===== STEP 2 ここまで =====
 
   // エンドポイントの設定
   app.get("/health", (c) => {

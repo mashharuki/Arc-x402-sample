@@ -42,6 +42,26 @@ sequenceDiagram
     end
 ```
 
+## Workshop guide
+
+### Prerequisites
+
+| Need | Where |
+|---|---|
+| Node.js 20+ and pnpm | `corepack enable` |
+| Privy account (App ID / Secret / Client ID) | [dashboard.privy.io](https://dashboard.privy.io) |
+| Cloudflare account (Workers Free) | [dash.cloudflare.com](https://dash.cloudflare.com) |
+| Arc Testnet USDC | [faucet.circle.com](https://faucet.circle.com) |
+
+### Steps
+
+1. **Step 0: setup.** `pnpm i && pnpm run setup`, then fill each `pkgs/*/.env` (see [How to work](#how-to-work)).
+2. **Step 1: server without x402.** In `pkgs/server/src/app.ts`, comment out the block between `===== STEP 2 =====` markers and start the server. `/weather` returns 200 with no 402 and no payment.
+3. **Step 2: enable x402.** Uncomment the block. The same request now gets `402 Payment Required`; the client signs, the facilitator verifies and settles on Arc Testnet, and the resource is returned.
+4. **Step 3: guardrails.** Run the `upto` scenarios in [Guardrails](#guardrails-with-the-upto-scheme). A settlement above the signed cap is rejected and no funds move.
+
+To use another chain or token, change the values listed under "Chain/asset config" in [CLAUDE.md](CLAUDE.md).
+
 ## setup
 
 ```bash
