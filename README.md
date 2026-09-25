@@ -56,6 +56,14 @@ pnpm run setup
 
 1. start facilitator 
 
+Set `pkgs/facilitator/.env`:
+
+```dotenv
+EVM_PRIVATE_KEY=0x<facilitator-private-key>
+```
+
+Fund the facilitator wallet with Arc Testnet USDC for transaction fees.
+
 ```bash
 pnpm facilitator run dev
 ```
@@ -94,6 +102,16 @@ curl http://localhost:4022/supported | jq
 
 2. x402 backend server(Resource server)
 
+Set `pkgs/server/.env`. `EVM_ADDRESS` is the wallet address that receives payments.
+
+```dotenv
+FACILITATOR_URL=http://localhost:4022
+EVM_ADDRESS=0x<recipient-wallet-address>
+ASSET_ADDRESS=0x3600000000000000000000000000000000000000
+```
+
+Keep the facilitator running and start the server in a separate terminal.
+
 ```bash
 pnpm x402server run dev
 ```
@@ -113,6 +131,20 @@ curl http://localhost:4021/health | jq
 ```
 
 3. run client script
+
+Set `pkgs/client/.env`:
+
+```dotenv
+PAYWALL_API_BASE_URL=http://localhost:4021
+PAYWALL_PATH=/weather
+EVM_PRIVATE_KEY=0x<payer-private-key>
+ASSET_ADDRESS=0x3600000000000000000000000000000000000000
+CHAIN_ID=5042002
+```
+
+Fund the payer wallet with at least **0.5 Arc Testnet USDC** before running the client. Use the [Circle faucet](https://faucet.circle.com/): select **Arc Testnet**, request USDC, and enter the public address of the wallet whose key you set as `EVM_PRIVATE_KEY`. Each successful `/weather` request costs 0.5 USDC. Insufficient funds return `402` with `invalid_exact_evm_insufficient_balance`.
+
+Keep the facilitator and server running and run the client in a separate terminal.
 
 ```bash
 pnpm x402client run dev
@@ -135,7 +167,7 @@ Payment settled: {
 
 ## Guardrails with the `upto` scheme
 
-`GET /usage?units=N` on the resource server uses the `upto` scheme (Permit2 based). The client authorizes a **maximum** (0.5 USDC) and the server settles only what was actually consumed (`units` x 0.1 USDC).
+`GET /usage?units=N` on the resource server uses the `upto` scheme (Permit2 based). The client authorizes a **maximum** (0.5 USDC), and the server requests `units` x 0.1 USDC. This demo takes `units` from the request; it does not measure actual usage.
 
 Spending is limited by three layers:
 
@@ -144,6 +176,8 @@ Spending is limited by three layers:
 | Per payment (client) | The client refuses to sign a payment above `MAX_AMOUNT_PER_PAYMENT` (default `1000000` = 1 USDC) | `pkgs/client/src/config.ts` |
 | Per payment (signature) | The Permit2 signature authorizes at most the `upto` maximum; the facilitator rejects a larger settlement | `pkgs/server/src/config.ts` |
 | Total budget (on-chain) | The USDC allowance granted to Permit2 (never `maxUint256`) | `pkgs/client/src/approve.ts` |
+
+The MCP tool `set_budget` sets this Permit2 allowance. It applies to `/usage` (`upto`); `/weather` (`exact`) reduces the wallet balance without using the allowance.
 
 The client needs a small amount of USDC for gas, because the `upto` flow does not use gas-sponsoring extensions.
 
@@ -248,8 +282,11 @@ The [Try every tool in one prompt](#try-every-tool-in-one-prompt) script below i
 
 ### Setup
 
-1. In the [Privy dashboard](https://dashboard.privy.io), enable **Email** login, copy the App ID, App Secret and Client ID, and add `http://localhost:5173` to **Allowed origins** (the MCP server runs on Node, which sends no `Origin` header, so it sets one itself; without a registered origin Privy answers `Must specify origin`).
-2. Create `pkgs/mcp/.env` (gitignored) with these keys:
+1. In the [Privy dashboard](https://dashboard.privy.io), select the app you will use for this demo:
+   - Confirm **Email** login is enabled.
+   - Copy the app's **App ID** and **App Secret**, then create or select a client in the same app and copy its **Client ID**. These become `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, and `PRIVY_CLIENT_ID` below. Keep the App Secret out of Git.
+   - Add `http://localhost:5173` to **Allowed origins**. The Node MCP server sends this value as its `Origin`; if it is not registered, Privy rejects the request.
+2. Copy `pkgs/mcp/.env.example` to `pkgs/mcp/.env` (gitignored) and fill in these keys. Set `ALLOWED_PAYEES` to the same recipient address as `EVM_ADDRESS` in `pkgs/server/.env`:
 
 ```bash
 PRIVY_APP_ID=
@@ -257,7 +294,7 @@ PRIVY_APP_SECRET=
 PRIVY_CLIENT_ID=
 ASSET_ADDRESS=0x3600000000000000000000000000000000000000
 # comma separated. Use the x402 server's EVM_ADDRESS (the payTo address)
-ALLOWED_PAYEES=
+ALLOWED_PAYEES=0x<recipient-wallet-address>
 # optional
 # must match a value in the Privy dashboard's Allowed origins
 PRIVY_ORIGIN=http://localhost:5173
@@ -289,6 +326,8 @@ MAX_AMOUNT_PER_PAYMENT=1000000
 
    Secrets stay in `pkgs/mcp/.env`; do not put `PRIVY_APP_SECRET` in the config file. After changing the MCP code or `.env`, reconnect with `/mcp` so the server restarts.
 
+   After connecting, call `wallet_status`. It returns `needsWallet: true` for a new wallet, or the address, balance, and allowance for an existing one. If it reports missing settings, check `pkgs/mcp/.env`.
+
 4. Ask Claude Code: "Check my wallet status and pay for /usage?units=3". It will guide you through the email login, then you fund the printed address with testnet USDC and set a budget.
 
    To fund it, use the public [Circle faucet](https://faucet.circle.com/): pick **Arc Testnet**, paste the address, request USDC. No signup, and the limit (20 USDC per address every 2 hours) is far more than this demo needs. Arc's native gas token and the ERC-20 USDC used for payments share the same underlying balance, so this one request covers both gas and the payment amount — no separate "get gas" step.
@@ -308,6 +347,13 @@ Once connected (stdio `x402-arc-demo` or the remote `x402-arc-demo` over HTTP, s
 Expected: steps 1–2 settle normally. Step 3's payment is sent (the signature only authorizes up to 0.5 USDC, so it still gets created), but settlement fails — the facilitator rejects it with something like `invalid_upto_evm_payload_settlement_exceeds_amount`, the same over-cap guardrail the `pnpm x402client run guardrails` script demonstrates, now triggered through natural language over MCP.
 
 ## Deploy to Cloudflare Workers
+
+Before uploading secrets, confirm your Cloudflare account is on the Workers Free plan. Open [Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages) and set your `workers.dev` subdomain under **Your subdomain → Change** if it is not set yet. Then log in with Wrangler and confirm the account you will deploy to:
+
+```bash
+pnpm --filter facilitator exec wrangler login
+pnpm --filter facilitator exec wrangler whoami
+```
 
 ### setup secret
 
@@ -368,6 +414,8 @@ Register the remote mcp Worker with Claude Code. Either way works:
   ```
 
 Unlike the stdio setup, there is no local `.env` to keep secrets in: `PRIVY_APP_SECRET` lives only as a Wrangler secret on the mcp Worker, so this config never needs to hold credentials.
+
+After connecting to the remote MCP server, call `wallet_status`. A new remote session should return `needsWallet: true` before email login.
 
 ### Destroy from Cloudflare Workers
 
