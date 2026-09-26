@@ -115,17 +115,25 @@ const runOverCap = async (): Promise<ScenarioResult> => {
 
   // 支払いが送られていない(requests < 2)場合は、上限で拒否されたのではないので成功扱いにしない
   const isPaymentSent = res.requests >= 2;
-  const isSettled =
-    res.kind === "response" &&
-    res.status === 200 &&
-    res.paymentStatus === "settled";
-
   if (!isPaymentSent) {
     return { ok: false, detail: "支払いが送られなかったため判定できない" };
   }
-  return isSettled
-    ? { ok: false, detail: "上限を超える決済が成立してしまった" }
-    : { ok: true, detail: "支払いは送られたが、決済は成立しなかった" };
+  if (res.kind !== "response") {
+    return { ok: false, detail: `想定外のclientエラー: ${res.message}` };
+  }
+  if (res.paymentStatus === "settled") {
+    return { ok: false, detail: "上限を超える決済が成立してしまった" };
+  }
+
+  // verify失敗(412: allowance不足など)を上限による拒否と取り違えないよう、理由まで確認する
+  const errorReason = (res.header as { errorReason?: string } | undefined)
+    ?.errorReason;
+  return errorReason?.includes("settlement_exceeds_amount")
+    ? { ok: true, detail: `上限超過で決済が拒否された: ${errorReason}` }
+    : {
+        ok: false,
+        detail: `決済は成立しなかったが、上限超過が理由か確認できない (status ${res.status}, reason ${errorReason ?? "なし"})`,
+      };
 };
 
 /** 3. client側の上限: 許容額(0.1 USDC)を、serverの認可上限(0.5 USDC)が超えている */
