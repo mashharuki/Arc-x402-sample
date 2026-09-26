@@ -275,7 +275,7 @@ pnpm x402client run dev
 # x402 を有効化
 
 <div class="step">
-<div class="card"><h3>今やること</h3>コメントアウトを外し、facilitator も起動して再実行</div>
+<div class="card"><h3>今やること</h3>先に facilitator を起動し、その後コメントアウトを外して再実行</div>
 <div class="card"><h3>コマンド</h3>
 
 ```bash
@@ -285,7 +285,7 @@ pnpm x402client run dev
 
 </div>
 <div class="card"><h3>期待される出力</h3><code>Payment settled</code> が表示され、天気データが返る</div>
-<div class="card am"><h3>詰まったとき</h3><code>insufficient_balance</code> → 0.5 USDC 以上をfaucetで補充</div>
+<div class="card am"><h3>詰まったとき</h3>500 → facilitator 起動後に server を再起動。<code>insufficient_balance</code> → faucet で 0.5 USDC 以上</div>
 </div>
 
 ---
@@ -295,11 +295,11 @@ pnpm x402client run dev
 # ガードレール
 
 <div class="step">
-<div class="card"><h3>今やること</h3>総予算を設定し、上限超過の支払いを試す</div>
+<div class="card"><h3>今やること</h3>総予算(2 USDC)を設定し、上限超過の支払いを試す</div>
 <div class="card"><h3>コマンド</h3>
 
 ```bash
-pnpm x402client run approve 2 --execute
+pnpm x402client run approve 2000000 --execute
 pnpm x402client run guardrails
 ```
 
