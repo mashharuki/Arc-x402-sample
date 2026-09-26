@@ -48,6 +48,9 @@ importers:
 
   pkgs/config:
     dependencies:
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       viem:
         specifier: ^2.55.19
         version: 2.55.19(typescript@7.0.2)(zod@4.6.5)
