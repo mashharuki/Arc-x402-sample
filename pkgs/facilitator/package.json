@@ -9,8 +9,8 @@
     "start": "node dist/index.js",
     "cf:types": "wrangler types",
     "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",
-    "cf:dev": "wrangler dev --port 8788",
-    "cf:deploy": "wrangler deploy"
+    "cf:dev": "node ../../scripts/wrangler.mjs dev --port 8788",
+    "cf:deploy": "node ../../scripts/wrangler.mjs deploy"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

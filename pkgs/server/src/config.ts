@@ -1,19 +1,16 @@
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
-import { getChainId, getPricing, getToken } from "@x402-sample/config";
+import {
+  getChainId,
+  getPricing,
+  getToken,
+  type SharedEnv,
+} from "@x402-sample/config";
 
-// チェーン・トークン・価格は .env(Workers では wrangler.jsonc の vars)から読み込む。
+// チェーン・トークン・価格は共有設定(pkgs/config/.env)から読み込む。
 // 変数名の解釈は pkgs/config/src/index.ts にある
-export type ServerEnv = {
+export type ServerEnv = SharedEnv & {
   FACILITATOR_URL: string;
   EVM_ADDRESS: string;
-  CHAIN_NAME: string;
-  ASSET_ADDRESS: string;
-  TOKEN_NAME: string;
-  TOKEN_VERSION: string;
-  TOKEN_DECIMALS: string;
-  PRICE_WEATHER: string;
-  USAGE_UNIT_PRICE: string;
-  USAGE_MAX_AMOUNT: string;
 };
 
 /** 環境変数に不足や不正があればここで投げる(起動時に呼んで早く失敗させる) */

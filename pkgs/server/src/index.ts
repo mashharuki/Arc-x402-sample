@@ -1,9 +1,12 @@
 import { serve } from "@hono/node-server";
+import { loadSharedEnv } from "@x402-sample/config/node";
 import dotenv from "dotenv";
 import { createApp } from "./app";
 import type { ServerEnv } from "./config";
 
 dotenv.config();
+// チェーン・トークン・価格は共有設定(pkgs/config/.env)から読み込む
+loadSharedEnv();
 
 const { FACILITATOR_URL, EVM_ADDRESS } = process.env;
 if (!FACILITATOR_URL || !EVM_ADDRESS) {

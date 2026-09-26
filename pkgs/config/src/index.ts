@@ -13,6 +13,23 @@ import * as viemChains from "viem/chains";
 
 type EnvLike = object;
 
+/**
+ * pkgs/config/.env に書く共有設定(Workers には deploy / dev のスクリプトが --var で渡す)
+ * Workers の `Env` にはこの型を足している(各パッケージの src/env.d.ts)
+ */
+export type SharedEnv = {
+  CHAIN_NAME: string;
+  ASSET_ADDRESS: string;
+  TOKEN_NAME: string;
+  TOKEN_VERSION: string;
+  TOKEN_DECIMALS: string;
+  PRICE_WEATHER: string;
+  USAGE_UNIT_PRICE: string;
+  USAGE_MAX_AMOUNT: string;
+  /** 1回の支払いの上限(atomic units)。省略時は各パッケージの既定値 */
+  MAX_AMOUNT_PER_PAYMENT?: string;
+};
+
 const readEnv = (env: EnvLike, key: string): string | undefined => {
   const value = (env as Record<string, unknown>)[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;

@@ -8,8 +8,8 @@
     "build": "tsc -p tsconfig.worker.json",
     "dev": "tsx watch src/index.ts",
     "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",
-    "cf:dev": "wrangler dev --port 8789",
-    "cf:deploy": "wrangler deploy"
+    "cf:dev": "node ../../scripts/wrangler.mjs dev --port 8789",
+    "cf:deploy": "node ../../scripts/wrangler.mjs deploy"
   },
   "keywords": [],
   "author": "",

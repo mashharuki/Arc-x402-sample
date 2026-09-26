@@ -8,5 +8,5 @@
     "noEmit": true,
     "types": ["./worker-configuration.d.ts"]
   },
-  "include": ["src/worker.ts", "worker-configuration.d.ts"]
+  "include": ["src/worker.ts", "src/env.d.ts", "worker-configuration.d.ts"]
 }

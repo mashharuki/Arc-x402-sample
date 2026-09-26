@@ -9,8 +9,8 @@
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",
-    "cf:dev": "wrangler dev --port 8790",
-    "cf:deploy": "wrangler deploy"
+    "cf:dev": "node ../../scripts/wrangler.mjs dev --port 8790",
+    "cf:deploy": "node ../../scripts/wrangler.mjs deploy"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

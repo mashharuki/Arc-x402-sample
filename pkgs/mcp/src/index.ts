@@ -1,6 +1,7 @@
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import dotenv from "dotenv";
 import { fileURLToPath } from "node:url";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { loadSharedEnv } from "@x402-sample/config/node";
+import dotenv from "dotenv";
 import { createMcpServer, registerTools } from "./lib/tools.js";
 import { parseEnv } from "./utils/env.js";
 import { createFileStore } from "./utils/store.node.js";
@@ -10,6 +11,8 @@ dotenv.config({
   path: fileURLToPath(new URL("../.env", import.meta.url)),
   quiet: true,
 });
+// チェーン・トークンは共有設定(pkgs/config/.env)から読み込む
+loadSharedEnv();
 
 // MCPのstdioはプロトコル専用なので、ログは必ず stderr に出す(console.error)
 

@@ -1,8 +1,12 @@
 import "dotenv/config";
 import { PERMIT2_ADDRESS } from "@x402/evm";
 import { getChain, getTokenAddress } from "@x402-sample/config";
+import { loadSharedEnv } from "@x402-sample/config/node";
 import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
 import { signer } from "./viem";
+
+// チェーン・トークンは共有設定(pkgs/config/.env)から読み込む
+loadSharedEnv();
 
 /**
  * USDCのPermit2へのallowanceを確認・設定するスクリプト(uptoスキームの事前準備)
