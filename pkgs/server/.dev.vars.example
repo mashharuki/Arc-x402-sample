@@ -1,4 +1,3 @@
 FACILITATOR_URL=http://localhost:8788
-ASSET_ADDRESS=0x3600000000000000000000000000000000000000
 # Set the payment recipient address (same value as ALLOWED_PAYEES in pkgs/mcp)
 EVM_ADDRESS=

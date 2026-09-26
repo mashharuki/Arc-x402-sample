@@ -1,23 +1,21 @@
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
-import { arcTestnet } from "viem/chains";
+import { CHAIN_ID, PRICING, TOKEN } from "@x402-sample/config";
 
 export type ServerEnv = {
   FACILITATOR_URL: string;
-  ASSET_ADDRESS: string;
   EVM_ADDRESS: string;
 };
 
-// chain id
-// Please replace this with your own chain id if you are using a different chain.
-export const CHAIN_ID = `eip155:${arcTestnet.id}` as `${string}:${string}`;
+// チェーン・トークン・価格は pkgs/config/src/index.ts で一元管理している
+export { CHAIN_ID };
 
-// 決済トークン(USDC)のEIP-712ドメイン。オンチェーンの name() / version() と一致させる必要がある
-const ASSET_EXTRA = { name: "USDC", version: "2" };
+// 決済トークンのEIP-712ドメイン。オンチェーンの name() / version() と一致させる必要がある
+const ASSET_EXTRA = { name: TOKEN.name, version: TOKEN.version };
 
-// 使用量課金(upto)の設定。decimals = 6
+// 使用量課金(upto)の設定
 // 上限(USAGE_MAX_AMOUNT)までをクライアントにPermit2署名で認可させ、実際の使用量分だけ決済する
-export const USAGE_UNIT_PRICE = 100000n; // 1ユニット = 0.1 USDC
-export const USAGE_MAX_AMOUNT = "500000"; // 認可上限 = 0.5 USDC
+export const USAGE_UNIT_PRICE = PRICING.usageUnit;
+export const USAGE_MAX_AMOUNT = PRICING.usageMax;
 
 // x402に関する設定
 export const createX402Config = (env: ServerEnv) => ({
@@ -26,11 +24,11 @@ export const createX402Config = (env: ServerEnv) => ({
       {
         scheme: "exact",
         price: {
-          amount: "500000", // 0.5 USDC (decimals = 6)
-          asset: env.ASSET_ADDRESS as `0x${string}`, // USDC
+          amount: PRICING.weather,
+          asset: TOKEN.address,
           extra: ASSET_EXTRA,
         },
-        network: CHAIN_ID as `${string}:${string}`,
+        network: CHAIN_ID,
         payTo: env.EVM_ADDRESS as `0x${string}`,
       },
     ],
@@ -53,10 +51,10 @@ export const createX402Config = (env: ServerEnv) => ({
         scheme: "upto",
         price: {
           amount: USAGE_MAX_AMOUNT,
-          asset: env.ASSET_ADDRESS as `0x${string}`, // USDC
+          asset: TOKEN.address,
           extra: ASSET_EXTRA,
         },
-        network: CHAIN_ID as `${string}:${string}`,
+        network: CHAIN_ID,
         payTo: env.EVM_ADDRESS as `0x${string}`,
       },
     ],

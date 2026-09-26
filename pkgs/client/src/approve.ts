@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PERMIT2_ADDRESS } from "@x402/evm";
+import { CHAIN, TOKEN } from "@x402-sample/config";
 import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
-import { arcTestnet } from "viem/chains";
 import { signer } from "./viem";
 
 /**
@@ -34,16 +34,12 @@ const main = async (): Promise<void> => {
       `amount must be a non-negative integer (atomic units): ${amountArg}`,
     );
   }
-  if (!process.env.ASSET_ADDRESS) {
-    throw new Error("ASSET_ADDRESS environment variable is required");
-  }
-
-  const token = process.env.ASSET_ADDRESS as `0x${string}`;
+  const token = TOKEN.address;
   const amount = BigInt(amountArg);
 
-  // サーバー/facilitatorと同じチェーン(arcTestnet)を使う
+  // サーバー/facilitatorと同じチェーン(pkgs/config)を使う
   const publicClient = createPublicClient({
-    chain: arcTestnet,
+    chain: CHAIN,
     transport: http(),
   });
 
@@ -69,7 +65,7 @@ const main = async (): Promise<void> => {
 
   const walletClient = createWalletClient({
     account: signer,
-    chain: arcTestnet,
+    chain: CHAIN,
     transport: http(),
   });
 

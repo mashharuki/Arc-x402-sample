@@ -1,8 +1,8 @@
-import { arcTestnet } from "viem/chains";
+import { CHAIN, CHAIN_ID } from "@x402-sample/config";
 
 // chain info
-// Please replace this with your own chain info if you are using a different chain.
+// チェーンは pkgs/config/src/index.ts で一元管理している
 export const chainInfo = {
-  chain: arcTestnet,
-  chainId: `eip155:${arcTestnet.id}`,
+  chain: CHAIN,
+  chainId: CHAIN_ID,
 };

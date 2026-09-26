@@ -2,6 +2,7 @@ import type { PrivyViemAccount } from "@privy-io/node/viem";
 import { ExactEvmScheme } from "@x402/evm/exact/client";
 import { UptoEvmScheme } from "@x402/evm/upto/client";
 import { wrapFetchWithPayment, x402Client, x402HTTPClient } from "@x402/fetch";
+import { TOKEN } from "@x402-sample/config";
 import { CHAIN_ID } from "../utils/constants.js";
 import type { Env } from "../utils/env.js";
 import { fail, ok, type Result, toMessage } from "../utils/result.js";
@@ -24,7 +25,7 @@ export const createPaymentClient = (
     allowedAssets: [
       {
         network: CHAIN_ID,
-        asset: env.ASSET_ADDRESS,
+        asset: TOKEN.address,
         maxAmountPerPayment: env.MAX_AMOUNT_PER_PAYMENT,
       },
     ],
