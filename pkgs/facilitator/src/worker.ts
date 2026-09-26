@@ -18,7 +18,14 @@ export default {
       console.error(message);
       return Response.json({ error: message }, { status: 500 });
     }
-    app ??= createApp(createFacilitator(env));
+    try {
+      // CHAIN_NAME の不足や不正は createFacilitator の中でキー名つきのエラーになる
+      app ??= createApp(createFacilitator(env));
+    } catch (error) {
+      const message = `facilitator misconfigured: ${error instanceof Error ? error.message : "Unknown error"}`;
+      console.error(message);
+      return Response.json({ error: message }, { status: 500 });
+    }
     return app.fetch(request, env, ctx);
   },
 } satisfies ExportedHandler<Env>;

@@ -1,7 +1,7 @@
 import { wrapAxiosWithPayment, x402Client, x402HTTPClient } from "@x402/axios";
 import { ExactEvmScheme } from "@x402/evm/exact/client";
 import { UptoEvmScheme } from "@x402/evm/upto/client";
-import { CHAIN_ID, LIMITS, TOKEN } from "@x402-sample/config";
+import { getChainId, getTokenAddress } from "@x402-sample/config";
 import axios from "axios";
 import dotenv from "dotenv";
 import "dotenv/config";
@@ -9,13 +9,14 @@ import { signer } from "./viem";
 
 dotenv.config();
 
-// チェーン・トークン・上限は pkgs/config/src/index.ts で一元管理している
-const NETWORK = CHAIN_ID;
+// チェーンとトークンは .env(CHAIN_NAME / ASSET_ADDRESS)から読み込む。解釈は pkgs/config/src/index.ts にある
+const NETWORK = getChainId(process.env);
+const ASSET = getTokenAddress(process.env);
 
-// 1回の支払いで署名を許可する上限(atomic units)。env MAX_AMOUNT_PER_PAYMENT で上書きできる
+// 1回の支払いで署名を許可する上限(atomic units, USDCはdecimals=6なので 1000000 = 1 USDC)。省略可
 // 超える要求は署名する前にclient側で拒否される
 export const DEFAULT_MAX_AMOUNT_PER_PAYMENT =
-  process.env.MAX_AMOUNT_PER_PAYMENT ?? LIMITS.maxAmountPerPayment;
+  process.env.MAX_AMOUNT_PER_PAYMENT ?? "1000000";
 
 /**
  * 支払い用のx402クライアントを作成する
@@ -35,7 +36,7 @@ export const createPaymentClient = (
     allowedAssets: [
       {
         network: NETWORK,
-        asset: TOKEN.address,
+        asset: ASSET,
         maxAmountPerPayment,
       },
     ],

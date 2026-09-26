@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import dotenv from "dotenv";
 import { createApp } from "./app";
+import type { ServerEnv } from "./config";
 
 dotenv.config();
 
@@ -12,7 +13,19 @@ if (!FACILITATOR_URL || !EVM_ADDRESS) {
   process.exit(1);
 }
 
+// チェーン・トークン・価格の不足や不正は createApp の中で検出され、キー名つきのエラーになる
+let app: ReturnType<typeof createApp>;
+try {
+  app = createApp(process.env as unknown as ServerEnv);
+} catch (error) {
+  console.error(
+    "❌ invalid server configuration:",
+    error instanceof Error ? error.message : "Unknown error",
+  );
+  process.exit(1);
+}
+
 serve({
-  fetch: createApp({ FACILITATOR_URL, EVM_ADDRESS }).fetch,
+  fetch: app.fetch,
   port: 4021,
 });

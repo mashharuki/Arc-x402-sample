@@ -12,10 +12,21 @@ if (!process.env.EVM_PRIVATE_KEY) {
   process.exit(1);
 }
 
-const facilitator = createFacilitator({
-  EVM_PRIVATE_KEY: process.env.EVM_PRIVATE_KEY,
-  RPC_URL: process.env.RPC_URL,
-});
+// CHAIN_NAME の不足や不正は createFacilitator の中で検出され、キー名つきのエラーになる
+let facilitator: ReturnType<typeof createFacilitator>;
+try {
+  facilitator = createFacilitator({
+    EVM_PRIVATE_KEY: process.env.EVM_PRIVATE_KEY,
+    CHAIN_NAME: process.env.CHAIN_NAME ?? "",
+    RPC_URL: process.env.RPC_URL,
+  });
+} catch (error) {
+  console.error(
+    "❌ invalid facilitator configuration:",
+    error instanceof Error ? error.message : "Unknown error",
+  );
+  process.exit(1);
+}
 
 serve(
   {

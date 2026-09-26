@@ -1,6 +1,10 @@
 import { paymentMiddleware, setSettlementOverrides } from "@x402/hono";
 import { Hono } from "hono";
-import { createX402Config, type ServerEnv, USAGE_UNIT_PRICE } from "./config";
+import {
+  createX402Config,
+  resolveServerConfig,
+  type ServerEnv,
+} from "./config";
 import { createResourceServer } from "./resourceServer";
 
 // 1リクエストで受け付ける最大ユニット数(BigInt計算の入力を制限する)
@@ -8,6 +12,9 @@ const MAX_UNITS = 1000;
 
 /** x402で課金されるHonoアプリを作成する */
 export const createApp = (env: ServerEnv): Hono => {
+  // 設定の不足・不正はここで検出する
+  const { chainId, pricing } = resolveServerConfig(env);
+
   // Honoインスタンスの作成
   const app = new Hono();
 
@@ -17,7 +24,7 @@ export const createApp = (env: ServerEnv): Hono => {
   app.use(
     paymentMiddleware(
       createX402Config(env),
-      createResourceServer(env.FACILITATOR_URL),
+      createResourceServer(env.FACILITATOR_URL, chainId),
     ),
   );
   // ===== STEP 2 ここまで =====
@@ -56,7 +63,7 @@ export const createApp = (env: ServerEnv): Hono => {
       );
     }
 
-    const amount = (BigInt(units) * USAGE_UNIT_PRICE).toString();
+    const amount = (BigInt(units) * pricing.usageUnit).toString();
     setSettlementOverrides(c, { amount });
 
     return c.json({ report: { units, charged: amount } });

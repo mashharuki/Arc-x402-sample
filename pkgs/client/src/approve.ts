@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PERMIT2_ADDRESS } from "@x402/evm";
-import { CHAIN, TOKEN } from "@x402-sample/config";
+import { getChain, getTokenAddress } from "@x402-sample/config";
 import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
 import { signer } from "./viem";
 
@@ -34,12 +34,14 @@ const main = async (): Promise<void> => {
       `amount must be a non-negative integer (atomic units): ${amountArg}`,
     );
   }
-  const token = TOKEN.address;
+  // チェーンとトークンは .env(CHAIN_NAME / ASSET_ADDRESS)から読み込む
+  const chain = getChain(process.env);
+  const token = getTokenAddress(process.env);
   const amount = BigInt(amountArg);
 
-  // サーバー/facilitatorと同じチェーン(pkgs/config)を使う
+  // サーバー/facilitatorと同じチェーンを使う
   const publicClient = createPublicClient({
-    chain: CHAIN,
+    chain,
     transport: http(),
   });
 
@@ -65,7 +67,7 @@ const main = async (): Promise<void> => {
 
   const walletClient = createWalletClient({
     account: signer,
-    chain: CHAIN,
+    chain,
     transport: http(),
   });
 

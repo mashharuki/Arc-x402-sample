@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { TOKEN } from "@x402-sample/config";
+import { getChain } from "@x402-sample/config";
 import { z } from "zod";
-import { MAX_BUDGET, PAYABLE_PATH } from "../utils/constants.js";
+import { PAYABLE_PATH } from "../utils/constants.js";
 import type { Env } from "../utils/env.js";
 import type { Result } from "../utils/result.js";
 import type { WalletStore } from "../utils/store.js";
@@ -97,8 +97,9 @@ export const registerTools = (server: McpServer, deps: ToolDeps): void => {
         }
 
         const balances = await readBalances(
+          getChain(env),
           state.data.address as `0x${string}`,
-          TOKEN.address,
+          env.ASSET_ADDRESS as `0x${string}`,
         );
         return fromResult(balances, (b) => ({
           needsWallet: false,
@@ -201,9 +202,10 @@ export const registerTools = (server: McpServer, deps: ToolDeps): void => {
     ({ amount, confirm }) =>
       withEnv(async (env) => {
         const value = BigInt(amount);
-        if (value > MAX_BUDGET) {
+        const maxBudget = BigInt(env.MAX_BUDGET);
+        if (value > maxBudget) {
           return text(
-            `amount exceeds the maximum budget of ${MAX_BUDGET} atomic units`,
+            `amount exceeds the maximum budget of ${maxBudget} atomic units`,
             true,
           );
         }
@@ -221,8 +223,9 @@ export const registerTools = (server: McpServer, deps: ToolDeps): void => {
 
         const account = createSignerAccount(createPrivyClient(env), state.data);
         const approved = await approveBudget(
+          getChain(env),
           account,
-          TOKEN.address,
+          env.ASSET_ADDRESS as `0x${string}`,
           value,
         );
         return fromResult(approved, (r) => r);

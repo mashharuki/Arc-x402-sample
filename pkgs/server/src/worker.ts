@@ -23,7 +23,14 @@ export default {
       console.error(message);
       return Response.json({ error: message }, { status: 500 });
     }
-    app ??= createApp(env);
+    try {
+      // チェーン・トークン・価格の不足や不正は createApp の中でキー名つきのエラーになる
+      app ??= createApp(env);
+    } catch (error) {
+      const message = `server misconfigured: ${error instanceof Error ? error.message : "Unknown error"}`;
+      console.error(message);
+      return Response.json({ error: message }, { status: 500 });
+    }
     return app.fetch(request, env, ctx);
   },
 } satisfies ExportedHandler<Env>;

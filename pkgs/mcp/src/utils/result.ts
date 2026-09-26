@@ -8,7 +8,7 @@ export const fail = <T = never>(error: string): Result<T> => ({
   error,
 });
 
-/** 
+/**
  * unknown な例外からメッセージを取り出す(スタックや秘密情報は含めない)
  */
 export const toMessage = (error: unknown): string =>

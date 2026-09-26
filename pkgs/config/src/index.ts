@@ -1,48 +1,140 @@
-import { parseUnits } from "viem";
-import { arcTestnet } from "viem/chains";
+import { type Chain, parseUnits } from "viem";
+import * as viemChains from "viem/chains";
 
 /**
- * チェーン・トークン・価格・上限の共通設定
+ * チェーン・トークン・価格の設定を環境変数から読み込む共通ロジック
  *
- * 別のチェーンやトークンに切り替えるときは、このファイルだけを編集する。
- * server / facilitator / client / mcp はすべてここを参照する。
- * 切り替え後は、facilitatorのウォレットにそのチェーンのガス代を入れること。
+ * 値そのものはコードに書かず、各パッケージの `.env`(Workers では wrangler.jsonc の vars)に書く。
+ * このファイルは「どの変数名をどう解釈するか」だけを持つ。
+ * 必須の変数が足りない場合は、値ではなくキー名だけをまとめたエラーを投げる。
+ *
+ * envには process.env でも Workers の env バインディングでも渡せる。
  */
 
+type EnvLike = object;
+
+const readEnv = (env: EnvLike, key: string): string | undefined => {
+  const value = (env as Record<string, unknown>)[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+};
+
+/** 必須キーがすべてあることを確認し、足りなければキー名だけを列挙して投げる */
+const requireEnv = <K extends string>(
+  env: EnvLike,
+  keys: readonly K[],
+): Record<K, string> => {
+  const missing = keys.filter((key) => readEnv(env, key) === undefined);
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing environment variables: ${missing.join(", ")} (see the package's .env.example)`,
+    );
+  }
+  return Object.fromEntries(
+    keys.map((key) => [key, readEnv(env, key) as string]),
+  ) as Record<K, string>;
+};
+
 // ===== チェーン =====
-// viem/chains の定義を差し替える(例: base, baseSepolia, kairos など)
-export const CHAIN = arcTestnet;
-export const CHAIN_NUMERIC_ID: number = CHAIN.id;
-export const CHAIN_ID = `eip155:${CHAIN.id}` as `${string}:${string}`;
+
+const isChain = (value: unknown): value is Chain =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof (value as Chain).id === "number" &&
+  typeof (value as Chain).name === "string" &&
+  "rpcUrls" in value;
+
+/**
+ * CHAIN_NAME(viem/chains のエクスポート名。例: arcTestnet, baseSepolia)からチェーン定義を返す
+ * 切り替え後は、facilitatorのウォレットにそのチェーンのガス代を入れること。
+ */
+export const getChain = (env: EnvLike): Chain => {
+  const { CHAIN_NAME } = requireEnv(env, ["CHAIN_NAME"]);
+  const chain = (viemChains as Record<string, unknown>)[CHAIN_NAME];
+  if (!isChain(chain)) {
+    throw new Error(
+      `CHAIN_NAME "${CHAIN_NAME}" is not a viem/chains export (examples: arcTestnet, baseSepolia)`,
+    );
+  }
+  return chain;
+};
+
+/** CAIP-2形式のチェーンID(例: eip155:5042002) */
+export const getChainId = (env: EnvLike): `${string}:${string}` =>
+  `eip155:${getChain(env).id}`;
 
 // ===== 決済トークン =====
-// name / version はトークンのEIP-712ドメイン。オンチェーンの name() / version() と一致させる
-// (versionが違うとfacilitatorのverifyが `FiatTokenV2: invalid signature` でrevertする)
-export const TOKEN = {
-  address: "0x3600000000000000000000000000000000000000" as `0x${string}`,
-  name: "USDC",
-  version: "2",
-  decimals: 6,
-} as const;
 
-/** 人が読める金額("0.5")を、トークンの最小単位(atomic units)の文字列にする */
-export const toAtomic = (amount: string): string =>
-  parseUnits(amount, TOKEN.decimals).toString();
+const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 
-// ===== 価格(トークンの単位。USDCなら 0.5 = 0.5 USDC) =====
-export const PRICING = {
-  /** GET /weather(exact): 1リクエストの固定料金 */
-  weather: toAtomic("0.5"),
-  /** GET /usage(upto): 1ユニットあたりの料金 */
-  usageUnit: parseUnits("0.1", TOKEN.decimals),
-  /** GET /usage(upto): クライアントが署名で認可する最大額 */
-  usageMax: toAtomic("0.5"),
-} as const;
+/** 決済トークンのアドレス(ASSET_ADDRESS) */
+export const getTokenAddress = (env: EnvLike): `0x${string}` => {
+  const { ASSET_ADDRESS } = requireEnv(env, ["ASSET_ADDRESS"]);
+  if (!ADDRESS_PATTERN.test(ASSET_ADDRESS)) {
+    throw new Error("ASSET_ADDRESS must be a 0x address");
+  }
+  return ASSET_ADDRESS as `0x${string}`;
+};
 
-// ===== ガードレール =====
-export const LIMITS = {
-  /** clientが1回の支払いで署名を許可する上限(env MAX_AMOUNT_PER_PAYMENT で上書き可) */
-  maxAmountPerPayment: toAtomic("1"),
-  /** MCPのset_budgetが一度に承認できる予算の上限 */
-  maxBudget: parseUnits("10", TOKEN.decimals),
-} as const;
+export type Token = {
+  address: `0x${string}`;
+  /** トークンのEIP-712ドメイン。オンチェーンの name() と一致させる */
+  name: string;
+  /** トークンのEIP-712ドメイン。オンチェーンの version() と一致させる(違うとverifyがrevertする) */
+  version: string;
+  decimals: number;
+};
+
+/** トークンの全情報。server のように署名検証用のドメインが必要な場合に使う */
+export const getToken = (env: EnvLike): Token => {
+  const { TOKEN_NAME, TOKEN_VERSION, TOKEN_DECIMALS } = requireEnv(env, [
+    "TOKEN_NAME",
+    "TOKEN_VERSION",
+    "TOKEN_DECIMALS",
+  ]);
+  const decimals = Number(TOKEN_DECIMALS);
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36) {
+    throw new Error("TOKEN_DECIMALS must be an integer between 0 and 36");
+  }
+  return {
+    address: getTokenAddress(env),
+    name: TOKEN_NAME,
+    version: TOKEN_VERSION,
+    decimals,
+  };
+};
+
+// ===== 価格(トークンの単位。USDCなら "0.5" = 0.5 USDC) =====
+
+export type Pricing = {
+  /** GET /weather(exact): 1リクエストの固定料金(atomic units) */
+  weather: string;
+  /** GET /usage(upto): 1ユニットあたりの料金(atomic units) */
+  usageUnit: bigint;
+  /** GET /usage(upto): クライアントが署名で認可する最大額(atomic units) */
+  usageMax: string;
+};
+
+const toAtomic = (key: string, amount: string, decimals: number): bigint => {
+  try {
+    return parseUnits(amount, decimals);
+  } catch {
+    throw new Error(`${key} must be a decimal amount such as "0.5"`);
+  }
+};
+
+export const getPricing = (env: EnvLike): Pricing => {
+  const { decimals } = getToken(env);
+  const { PRICE_WEATHER, USAGE_UNIT_PRICE, USAGE_MAX_AMOUNT } = requireEnv(
+    env,
+    ["PRICE_WEATHER", "USAGE_UNIT_PRICE", "USAGE_MAX_AMOUNT"],
+  );
+  return {
+    weather: toAtomic("PRICE_WEATHER", PRICE_WEATHER, decimals).toString(),
+    usageUnit: toAtomic("USAGE_UNIT_PRICE", USAGE_UNIT_PRICE, decimals),
+    usageMax: toAtomic(
+      "USAGE_MAX_AMOUNT",
+      USAGE_MAX_AMOUNT,
+      decimals,
+    ).toString(),
+  };
+};
