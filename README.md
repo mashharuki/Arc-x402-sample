@@ -69,6 +69,7 @@ The chain, token and prices are shared by all four packages, so they live in **o
 | Variable | Used by | Meaning |
 |---|---|---|
 | `CHAIN_NAME` | all | A `viem/chains` export name such as `arcTestnet` or `baseSepolia` |
+| `PAYEE_ADDRESS` | server, mcp | Wallet that receives the payments: the server's `payTo`, and the only payee the mcp Privy policy allows |
 | `ASSET_ADDRESS` | server, client, mcp | Address of the payment token |
 | `TOKEN_NAME`, `TOKEN_VERSION`, `TOKEN_DECIMALS` | server | The token's EIP-712 domain and decimals. `name` and `version` must match the token's on-chain `name()` / `version()`, otherwise verify reverts with `FiatTokenV2: invalid signature` |
 | `PRICE_WEATHER`, `USAGE_UNIT_PRICE`, `USAGE_MAX_AMOUNT` | server | Prices in token units (`0.5` = 0.5 USDC) |
@@ -140,14 +141,13 @@ curl http://localhost:4022/supported | jq
 
 2. x402 backend server(Resource server)
 
-Set `pkgs/server/.env`. `EVM_ADDRESS` is the wallet address that receives payments.
+Set `pkgs/server/.env`:
 
 ```dotenv
 FACILITATOR_URL=http://localhost:4022
-EVM_ADDRESS=0x<recipient-wallet-address>
 ```
 
-The token and prices come from `pkgs/config/.env` (see [Switch chain, token or price](#switch-chain-token-or-price)).
+Also set `PAYEE_ADDRESS` (the wallet address that receives payments) in `pkgs/config/.env`. The token and prices are in the same file (see [Switch chain, token or price](#switch-chain-token-or-price)).
 
 Keep the facilitator running and start the server in a separate terminal.
 
@@ -292,7 +292,7 @@ Not covered by the script yet: allowance exhaustion (run `approve 0 --execute`, 
 
 ## MCP server for Claude Code (Privy user-owned wallet)
 
-`pkgs/mcp` is an MCP server (stdio locally, or Streamable HTTP once deployed — see [Deploy to Cloudflare Workers](#deploy-to-cloudflare-workers)) that lets Claude Code run this demo. Each user gets their own **Privy user-owned wallet**: the user proves their email with a one-time code, the wallet is created with the user as owner, and a locally generated delegate key is added as an additional signer. The delegate key can only sign what the Privy policy allows (payments up to `MAX_AMOUNT_PER_PAYMENT`, only to `ALLOWED_PAYEES`, only on Arc Testnet).
+`pkgs/mcp` is an MCP server (stdio locally, or Streamable HTTP once deployed — see [Deploy to Cloudflare Workers](#deploy-to-cloudflare-workers)) that lets Claude Code run this demo. Each user gets their own **Privy user-owned wallet**: the user proves their email with a one-time code, the wallet is created with the user as owner, and a locally generated delegate key is added as an additional signer. The delegate key can only sign what the Privy policy allows (payments up to `MAX_AMOUNT_PER_PAYMENT`, only to `PAYEE_ADDRESS`, only on Arc Testnet).
 
 Tools: `wallet_status`, `wallet_login_start`, `wallet_login_verify`, `set_budget` (two steps: preview, then `confirm`), `pay_and_fetch` (only `/weather` and `/usage?units=N`).
 
@@ -325,14 +325,12 @@ The [Try every tool in one prompt](#try-every-tool-in-one-prompt) script below i
    - Confirm **Email** login is enabled.
    - Copy the app's **App ID** and **App Secret**, then create or select a client in the same app and copy its **Client ID**. These become `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, and `PRIVY_CLIENT_ID` below. Keep the App Secret out of Git.
    - Add `http://localhost:5173` to **Allowed origins**. The Node MCP server sends this value as its `Origin`; if it is not registered, Privy rejects the request.
-2. Copy `pkgs/mcp/.env.example` to `pkgs/mcp/.env` (gitignored) and fill in these keys. Set `ALLOWED_PAYEES` to the same recipient address as `EVM_ADDRESS` in `pkgs/server/.env`:
+2. Copy `pkgs/mcp/.env.example` to `pkgs/mcp/.env` (gitignored) and fill in these keys. The payee the Privy policy allows is `PAYEE_ADDRESS` from `pkgs/config/.env`, the same address the server is paid at, so there is nothing to keep in sync:
 
 ```bash
 PRIVY_APP_ID=
 PRIVY_APP_SECRET=
 PRIVY_CLIENT_ID=
-# comma separated. Use the x402 server's EVM_ADDRESS (the payTo address)
-ALLOWED_PAYEES=0x<recipient-wallet-address>
 # optional
 # must match a value in the Privy dashboard's Allowed origins
 PRIVY_ORIGIN=http://localhost:5173
@@ -403,7 +401,7 @@ pnpm --filter x402mcp exec wrangler secret put PRIVY_APP_SECRET
 
 ### Deploy to Cloudflare Workers
 
-Before deploying, fill in the public (non-secret) values: `EVM_ADDRESS` in `pkgs/server/wrangler.jsonc`, and `PRIVY_APP_ID`, `PRIVY_CLIENT_ID`, `ALLOWED_PAYEES` in `pkgs/mcp/wrangler.jsonc`. Full checklist and operational caveats: [`docs/cloudflare-deploy.md`](docs/cloudflare-deploy.md).
+Before deploying, fill in the public (non-secret) values: `FACILITATOR_URL` in `pkgs/server/wrangler.jsonc`, and `PRIVY_APP_ID`, `PRIVY_CLIENT_ID` in `pkgs/mcp/wrangler.jsonc`. The payee address comes from `pkgs/config/.env` like the other shared values. Full checklist and operational caveats: [`docs/cloudflare-deploy.md`](docs/cloudflare-deploy.md).
 
 Deploy in order, copying each printed URL into the next config before deploying it:
 

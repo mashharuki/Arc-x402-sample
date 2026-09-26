@@ -25,29 +25,28 @@ facilitator / server / mcp(リモートMCP)を Cloudflare Workers で動かす�
 
 `vars` は意図的に不完全です。公開してよい(秘密でない)値を、各 `.env` からコピーして追加してください。
 
-- [ ] `pkgs/server/wrangler.jsonc` の `vars` に `EVM_ADDRESS`(`pkgs/server/.env` と同じ値)
-- [ ] `pkgs/mcp/wrangler.jsonc` の `vars` に `PRIVY_APP_ID` `PRIVY_CLIENT_ID` `ALLOWED_PAYEES`(`pkgs/mcp/.env` と同じ値。`ALLOWED_PAYEES` は server の `EVM_ADDRESS`)
+- [ ] `pkgs/server/wrangler.jsonc` の `vars` に `FACILITATOR_URL`
+- [ ] `pkgs/mcp/wrangler.jsonc` の `vars` に `PRIVY_APP_ID` `PRIVY_CLIENT_ID`(`pkgs/mcp/.env` と同じ値)
+- [ ] `pkgs/config/.env` の `PAYEE_ADDRESS`(支払いの受取先。server の payTo と、mcp の Privy ポリシーが許可する送金先の両方に使われます)
 - [ ] **必須** mcp の `PRIVY_ORIGIN`: 既定の `http://localhost:5173` のままだと、デプロイ済み Worker から privy.io へ `Origin: http://localhost:5173` が送られます。デプロイ済み mcp Worker の https オリジン(または別のオリジン)を設定し、そのオリジンを Privy Dashboard の Allowed origins に登録してください。localhost のままでも動くのは、localhost:5173 が Allowed origins に残っている間だけです
 
 ```jsonc
 // pkgs/server/wrangler.jsonc
 "vars": {
-  "FACILITATOR_URL": "<facilitator の URL>",
-  "EVM_ADDRESS": "0x..."
+  "FACILITATOR_URL": "<facilitator の URL>"
 }
 
 // pkgs/mcp/wrangler.jsonc
 "vars": {
   "PAYWALL_API_BASE_URL": "<server の URL>",
   "PRIVY_APP_ID": "...",
-  "PRIVY_CLIENT_ID": "...",
-  "ALLOWED_PAYEES": "0x..."
+  "PRIVY_CLIENT_ID": "..."
 }
 ```
 
-チェーン・トークン・価格(`CHAIN_NAME` / `ASSET_ADDRESS` / `TOKEN_*` / `PRICE_*` / `USAGE_*` / `MAX_AMOUNT_PER_PAYMENT`)は `wrangler.jsonc` ではなく、共有設定 `pkgs/config/.env` に書きます(既定は Arc Testnet)。`pnpm deploy:*` と `pnpm cf:dev:*` は `scripts/wrangler.mjs` 経由で、この値を `--var` として wrangler に渡します。**`wrangler deploy` を直接実行すると渡されない**ので、必ず `pnpm deploy:*`(または各パッケージの `pnpm run cf:deploy`)を使ってください。別のチェーンやトークンにするときは `pkgs/config/.env` を編集して、server / facilitator / mcp を再デプロイします。値が足りない、または `CHAIN_NAME` が不正な場合、Worker は変数名つきの 500 エラーを返します。
+チェーン・トークン・価格(`CHAIN_NAME` / `PAYEE_ADDRESS` / `ASSET_ADDRESS` / `TOKEN_*` / `PRICE_*` / `USAGE_*` / `MAX_AMOUNT_PER_PAYMENT`)は `wrangler.jsonc` ではなく、共有設定 `pkgs/config/.env` に書きます(既定は Arc Testnet)。`pnpm deploy:*` と `pnpm cf:dev:*` は `scripts/wrangler.mjs` 経由で、この値を `--var` として wrangler に渡します。**`wrangler deploy` を直接実行すると渡されない**ので、必ず `pnpm deploy:*`(または各パッケージの `pnpm run cf:deploy`)を使ってください。別のチェーンやトークンにするときは `pkgs/config/.env` を編集して、server / facilitator / mcp を再デプロイします。値が足りない、または `CHAIN_NAME` が不正な場合、Worker は変数名つきの 500 エラーを返します。
 
-ファイルを編集せずに渡す場合: `pnpm --filter x402server exec wrangler deploy --var EVM_ADDRESS:0x...`(mcp も同様)。
+ファイルを編集せずに渡す場合: `pnpm --filter x402server exec wrangler deploy --var PAYEE_ADDRESS:0x... --var CHAIN_NAME:arcTestnet ...`(共有設定の全項目を渡す必要があります。通常は `pnpm deploy:server` を使ってください)。
 
 ### Secrets(ファイルに書かない)
 

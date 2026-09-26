@@ -317,7 +317,7 @@ pnpm x402client run guardrails
 | 402 のまま進まない | facilitator と server が両方起動しているか |
 | 残高不足 | Circle faucet(Arc Testnet)で USDC を補充 |
 | 署名エラー | チェーンとトークンは <code>pkgs/config/.env</code> の1か所。値を確認 |
-| MCP が動かない | Privy の Allowed origins と <code>ALLOWED_PAYEES</code> |
+| MCP が動かない | Privy の Allowed origins と <code>pkgs/config/.env</code> の <code>PAYEE_ADDRESS</code> |
 
 <p class="mute">手を挙げてください。すぐに行きます</p>
 
