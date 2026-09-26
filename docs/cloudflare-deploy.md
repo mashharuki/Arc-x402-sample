@@ -45,7 +45,7 @@ facilitator / server / mcp(リモートMCP)を Cloudflare Workers で動かす�
 }
 ```
 
-チェーン・トークン・価格(`CHAIN_NAME` / `ASSET_ADDRESS` / `TOKEN_*` / `PRICE_*` / `USAGE_*`)も各 `wrangler.jsonc` の `vars` に入っています(既定は Arc Testnet)。別のチェーンやトークンにするときは、README の「Switch chain, token or price」の表に沿って server / facilitator / mcp の `vars` を揃え、再デプロイしてください。値が足りない、または `CHAIN_NAME` が不正な場合、Worker は起動時に変数名つきの 500 エラーを返します。
+チェーン・トークン・価格(`CHAIN_NAME` / `ASSET_ADDRESS` / `TOKEN_*` / `PRICE_*` / `USAGE_*` / `MAX_AMOUNT_PER_PAYMENT`)は `wrangler.jsonc` ではなく、共有設定 `pkgs/config/.env` に書きます(既定は Arc Testnet)。`pnpm deploy:*` と `pnpm cf:dev:*` は `scripts/wrangler.mjs` 経由で、この値を `--var` として wrangler に渡します。**`wrangler deploy` を直接実行すると渡されない**ので、必ず `pnpm deploy:*`(または各パッケージの `pnpm run cf:deploy`)を使ってください。別のチェーンやトークンにするときは `pkgs/config/.env` を編集して、server / facilitator / mcp を再デプロイします。値が足りない、または `CHAIN_NAME` が不正な場合、Worker は変数名つきの 500 エラーを返します。
 
 ファイルを編集せずに渡す場合: `pnpm --filter x402server exec wrangler deploy --var EVM_ADDRESS:0x...`(mcp も同様)。
 
