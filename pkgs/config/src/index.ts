@@ -20,6 +20,8 @@ type EnvLike = object;
 export type SharedEnv = {
   CHAIN_NAME: string;
   ASSET_ADDRESS: string;
+  /** 支払いの受取先。serverの payTo と、mcpのPrivyポリシーが許可する送金先の両方に使う */
+  PAYEE_ADDRESS: string;
   TOKEN_NAME: string;
   TOKEN_VERSION: string;
   TOKEN_DECIMALS: string;
@@ -83,14 +85,21 @@ export const getChainId = (env: EnvLike): `${string}:${string}` =>
 
 const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 
-/** 決済トークンのアドレス(ASSET_ADDRESS) */
-export const getTokenAddress = (env: EnvLike): `0x${string}` => {
-  const { ASSET_ADDRESS } = requireEnv(env, ["ASSET_ADDRESS"]);
-  if (!ADDRESS_PATTERN.test(ASSET_ADDRESS)) {
-    throw new Error("ASSET_ADDRESS must be a 0x address");
+const readAddress = (env: EnvLike, key: string): `0x${string}` => {
+  const value = requireEnv(env, [key])[key];
+  if (!ADDRESS_PATTERN.test(value)) {
+    throw new Error(`${key} must be a 0x address`);
   }
-  return ASSET_ADDRESS as `0x${string}`;
+  return value as `0x${string}`;
 };
+
+/** 決済トークンのアドレス(ASSET_ADDRESS) */
+export const getTokenAddress = (env: EnvLike): `0x${string}` =>
+  readAddress(env, "ASSET_ADDRESS");
+
+/** 支払いの受取先アドレス(PAYEE_ADDRESS)。serverのpayToとmcpの許可する送金先に使う */
+export const getPayeeAddress = (env: EnvLike): `0x${string}` =>
+  readAddress(env, "PAYEE_ADDRESS");
 
 export type Token = {
   address: `0x${string}`;

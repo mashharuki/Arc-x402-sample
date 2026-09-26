@@ -12,12 +12,8 @@ const envSchema = z.object({
   PRIVY_CLIENT_ID: z.string().min(1),
   // Node の fetch は Origin を付けないため明示する。Privy Dashboard の Allowed origins に登録済みの値にする
   PRIVY_ORIGIN: z.url().default("http://localhost:5173"),
-  // ポリシーで送金先として許可するアドレス(カンマ区切り)。x402 serverの EVM_ADDRESS を指定する
-  ALLOWED_PAYEES: z
-    .string()
-    .min(1)
-    .transform((value) => value.split(",").map((item) => item.trim()))
-    .pipe(z.array(address).min(1)),
+  // Privyポリシーで送金先として許可するアドレス。x402 serverの payTo と同じ値(共有設定の PAYEE_ADDRESS)
+  PAYEE_ADDRESS: address,
   PAYWALL_API_BASE_URL: z.url().default("http://localhost:4021"),
   // 使うチェーン(viem/chains のエクスポート名。例: arcTestnet)。解釈は pkgs/config にある
   CHAIN_NAME: z.string().min(1),
@@ -48,6 +44,6 @@ export const parseEnv = (raw: unknown): Result<Env> => {
 
   const keys = [...new Set(parsed.error.issues.map((i) => String(i.path[0])))];
   return fail(
-    `Invalid or missing environment variables (PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_CLIENT_ID, CHAIN_NAME, ASSET_ADDRESS, ALLOWED_PAYEES): ${keys.join(", ")}`,
+    `Invalid or missing environment variables (PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_CLIENT_ID, CHAIN_NAME, ASSET_ADDRESS, PAYEE_ADDRESS): ${keys.join(", ")}`,
   );
 };

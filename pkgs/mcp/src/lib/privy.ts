@@ -35,8 +35,8 @@ let isOriginHeaderInstalled = false;
 
 /**
  * Originヘッダーをインストールする。
- * @param origin 
- * @returns 
+ * @param origin
+ * @returns
  */
 const installOriginHeader = (origin: string): void => {
   if (isOriginHeaderInstalled) return;
@@ -56,7 +56,7 @@ const installOriginHeader = (origin: string): void => {
   };
 };
 
-/** 
+/**
  * メールOTPログイン用のクライアント(画面なしで動かす)
  */
 export const createAuthClient = (env: Env): Privy => {
@@ -72,9 +72,9 @@ export const createAuthClient = (env: Env): Privy => {
  * ワンタイムパスワード(OTP)をメールで送信する。
  * 送信後は verifyLoginCode で検証する。
  * 失敗した場合は、ユーザーに再送を促す。
- * @param auth 
- * @param email 
- * @returns 
+ * @param auth
+ * @param email
+ * @returns
  */
 export const sendLoginCode = async (
   auth: Privy,
@@ -115,7 +115,7 @@ export const verifyLoginCode = async (
 const toBase64 = (buffer: ArrayBuffer): string =>
   btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
-/** 
+/**
  * 委任キー(P-256)を生成する。
  * 公開鍵は base64 DER(SPKI)、秘密鍵は base64 PKCS8
  */
@@ -165,7 +165,7 @@ export const provisionWallet = async (
         chainId: getChain(env).id,
         asset: env.ASSET_ADDRESS as `0x${string}`,
         maxAmount: env.MAX_AMOUNT_PER_PAYMENT,
-        payees: env.ALLOWED_PAYEES,
+        payees: [env.PAYEE_ADDRESS],
       }),
     );
 
@@ -193,9 +193,9 @@ export const provisionWallet = async (
   }
 };
 
-/** 
+/**
  * 委任キーで署名する viem アカウント。
- * 署名のたびにPrivy側でポリシーが評価される 
+ * 署名のたびにPrivy側でポリシーが評価される
  */
 export const createSignerAccount = (
   privy: PrivyClient,

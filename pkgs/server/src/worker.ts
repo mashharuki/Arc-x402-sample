@@ -5,7 +5,7 @@ import { createApp } from "./app";
 let app: Hono | undefined;
 
 // 必須の環境変数(エラーには値ではなくキー名のみを出す)
-const REQUIRED_KEYS = ["FACILITATOR_URL", "EVM_ADDRESS"] as const;
+const REQUIRED_KEYS = ["FACILITATOR_URL"] as const;
 
 export default {
   fetch(
