@@ -31,8 +31,8 @@ const WALLET_KEY = "wallet";
 
 /**
  * KeyValueStorageを用いてWalletStoreを作成する
- * @param storage 
- * @returns 
+ * @param storage
+ * @returns
  */
 export const createKvStore = (storage: KeyValueStorage): WalletStore => ({
   load: async () => {

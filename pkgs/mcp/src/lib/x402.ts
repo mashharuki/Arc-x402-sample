@@ -2,13 +2,13 @@ import type { PrivyViemAccount } from "@privy-io/node/viem";
 import { ExactEvmScheme } from "@x402/evm/exact/client";
 import { UptoEvmScheme } from "@x402/evm/upto/client";
 import { wrapFetchWithPayment, x402Client, x402HTTPClient } from "@x402/fetch";
-import { CHAIN_ID } from "../utils/constants.js";
+import { getChainId } from "@x402-sample/config";
 import type { Env } from "../utils/env.js";
 import { fail, ok, type Result, toMessage } from "../utils/result.js";
 
-/** 
+/**
  * 支払い用のx402クライアント。
- * 署名前に1回あたりの上限をclient側でも確認する 
+ * 署名前に1回あたりの上限をclient側でも確認する
  */
 export const createPaymentClient = (
   signer: PrivyViemAccount,
@@ -16,15 +16,16 @@ export const createPaymentClient = (
 ): x402Client => {
   // x402Clientを作成
   const client = new x402Client();
+  const chainId = getChainId(env);
   // 署名スキームを登録する。Exactは1回あたりの正確な金額、Uptoは上限までの任意の金額で支払える
-  client.register(CHAIN_ID, new ExactEvmScheme(signer));
-  client.register(CHAIN_ID, new UptoEvmScheme(signer));
+  client.register(chainId, new ExactEvmScheme(signer));
+  client.register(chainId, new UptoEvmScheme(signer));
   // 1回あたりの上限を設定する。これにより、ユーザーが意図しない大きな支払いを防ぐ
   client.setSpendControls({
     allowedAssets: [
       {
-        network: CHAIN_ID,
-        asset: env.ASSET_ADDRESS,
+        network: chainId,
+        asset: env.ASSET_ADDRESS as `0x${string}`,
         maxAmountPerPayment: env.MAX_AMOUNT_PER_PAYMENT,
       },
     ],
@@ -41,7 +42,7 @@ export type PaidResponse = {
   body: unknown;
 };
 
-/** 
+/**
  * x402のリソースを取得する。
  * 402なら署名して再送する
  */

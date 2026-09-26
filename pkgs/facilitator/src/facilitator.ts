@@ -1,11 +1,13 @@
 import { x402Facilitator } from "@x402/core/facilitator";
 import { ExactEvmScheme } from "@x402/evm/exact/facilitator";
 import { UptoEvmScheme } from "@x402/evm/upto/facilitator";
-import { chainInfo } from "./config.js";
+import { getChain, getChainId } from "@x402-sample/config";
 import { createEvmSigner } from "./viem.js";
 
 export type FacilitatorEnv = {
   EVM_PRIVATE_KEY: string;
+  /** viem/chains のエクスポート名(例: arcTestnet)。pkgs/config で解釈する */
+  CHAIN_NAME: string;
   /** 省略時はチェーン既定のRPC */
   RPC_URL?: string;
 };
@@ -38,7 +40,7 @@ const logStage = (stage: string, context: object): void => {
 export const createFacilitator = (env: FacilitatorEnv): x402Facilitator => {
   const evmSigner = createEvmSigner(
     env.EVM_PRIVATE_KEY as `0x${string}`,
-    chainInfo.chain,
+    getChain(env),
     env.RPC_URL,
   );
 
@@ -50,7 +52,7 @@ export const createFacilitator = (env: FacilitatorEnv): x402Facilitator => {
     .onAfterSettle(async (context) => logStage("After settle", context))
     .onSettleFailure(async (context) => logStage("Settle failure", context));
 
-  const network = chainInfo.chainId as `eip155:${number}`;
+  const network = getChainId(env) as `eip155:${number}`;
   facilitator.register(
     network,
     new ExactEvmScheme(evmSigner, { eip6492AllowedFactories: [] }),

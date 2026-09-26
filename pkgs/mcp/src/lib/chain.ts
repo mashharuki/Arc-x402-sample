@@ -1,10 +1,16 @@
 import type { PrivyViemAccount } from "@privy-io/node/viem";
 import { PERMIT2_ADDRESS } from "@x402/evm";
-import { createPublicClient, createWalletClient, erc20Abi, http } from "viem";
-import { CHAIN } from "../utils/constants.js";
+import {
+  type Chain,
+  createPublicClient,
+  createWalletClient,
+  erc20Abi,
+  http,
+} from "viem";
 import { fail, ok, type Result, toMessage } from "../utils/result.js";
 
-const publicClient = createPublicClient({ chain: CHAIN, transport: http() });
+const createChainClient = (chain: Chain) =>
+  createPublicClient({ chain, transport: http() });
 
 export type WalletBalances = {
   /** トークン残高(atomic units) */
@@ -15,15 +21,17 @@ export type WalletBalances = {
 
 /**
  * ERC20トークンの残高とPermit2へのallowanceを取得する。
- * @param owner 
- * @param token 
- * @returns 
+ * @param owner
+ * @param token
+ * @returns
  */
 export const readBalances = async (
+  chain: Chain,
   owner: `0x${string}`,
   token: `0x${string}`,
 ): Promise<Result<WalletBalances>> => {
   try {
+    const publicClient = createChainClient(chain);
     const [balance, allowance] = await Promise.all([
       publicClient.readContract({
         address: token,
@@ -50,14 +58,16 @@ export const readBalances = async (
  * 署名はPrivy(委任キー+ポリシー)、送信は自前のRPCで行う(PrivyのArc対応に依存しない)。
  */
 export const approveBudget = async (
+  chain: Chain,
   account: PrivyViemAccount,
   token: `0x${string}`,
   amount: bigint,
 ): Promise<Result<{ hash: string; status: string }>> => {
   try {
+    const publicClient = createChainClient(chain);
     const walletClient = createWalletClient({
       account,
-      chain: CHAIN,
+      chain,
       transport: http(),
     });
     const hash = await walletClient.writeContract({

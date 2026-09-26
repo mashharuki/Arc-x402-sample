@@ -1,8 +1,12 @@
 import "dotenv/config";
 import { PERMIT2_ADDRESS } from "@x402/evm";
+import { getChain, getTokenAddress } from "@x402-sample/config";
+import { loadSharedEnv } from "@x402-sample/config/node";
 import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
-import { arcTestnet } from "viem/chains";
 import { signer } from "./viem";
+
+// チェーン・トークンは共有設定(pkgs/config/.env)から読み込む
+loadSharedEnv();
 
 /**
  * USDCのPermit2へのallowanceを確認・設定するスクリプト(uptoスキームの事前準備)
@@ -34,16 +38,14 @@ const main = async (): Promise<void> => {
       `amount must be a non-negative integer (atomic units): ${amountArg}`,
     );
   }
-  if (!process.env.ASSET_ADDRESS) {
-    throw new Error("ASSET_ADDRESS environment variable is required");
-  }
-
-  const token = process.env.ASSET_ADDRESS as `0x${string}`;
+  // チェーンとトークンは .env(CHAIN_NAME / ASSET_ADDRESS)から読み込む
+  const chain = getChain(process.env);
+  const token = getTokenAddress(process.env);
   const amount = BigInt(amountArg);
 
-  // サーバー/facilitatorと同じチェーン(arcTestnet)を使う
+  // サーバー/facilitatorと同じチェーンを使う
   const publicClient = createPublicClient({
-    chain: arcTestnet,
+    chain,
     transport: http(),
   });
 
@@ -69,7 +71,7 @@ const main = async (): Promise<void> => {
 
   const walletClient = createWalletClient({
     account: signer,
-    chain: arcTestnet,
+    chain,
     transport: http(),
   });
 

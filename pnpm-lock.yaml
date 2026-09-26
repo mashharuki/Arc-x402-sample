@@ -17,6 +17,9 @@ importers:
       '@coinbase/cdp-sdk':
         specifier: ^1.55.0
         version: 1.55.0(@x402/core@2.23.0)(@x402/evm@2.23.0)(@x402/extensions@2.23.0)(@x402/svm@2.23.0(@solana/kit@5.5.1)(@solana/sysvars@5.5.1))
+      '@x402-sample/config':
+        specifier: workspace:*
+        version: link:../config
       '@x402/axios':
         specifier: ^2.23.0
         version: 2.23.0(axios@1.19.0)
@@ -43,11 +46,23 @@ importers:
         specifier: ^17.4.2
         version: 17.4.2
 
+  pkgs/config:
+    dependencies:
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
+      viem:
+        specifier: ^2.55.19
+        version: 2.55.19(typescript@7.0.2)(zod@4.6.5)
+
   pkgs/facilitator:
     dependencies:
       '@hono/node-server':
         specifier: ^2.1.1
         version: 2.1.1(hono@4.13.3)
+      '@x402-sample/config':
+        specifier: workspace:*
+        version: link:../config
       '@x402/core':
         specifier: ^2.23.0
         version: 2.23.0
@@ -88,6 +103,9 @@ importers:
       '@privy-io/node':
         specifier: ^0.34.0
         version: 0.34.0(@solana/kit@5.5.1(typescript@7.0.2))(@x402/evm@2.23.0(typescript@7.0.2))(@x402/fetch@2.23.0)(@x402/svm@2.23.0(@solana/kit@5.5.1(typescript@7.0.2))(@solana/sysvars@5.5.1(typescript@7.0.2)))(viem@2.55.19(typescript@7.0.2)(zod@4.6.5))
+      '@x402-sample/config':
+        specifier: workspace:*
+        version: link:../config
       '@x402/core':
         specifier: ^2.23.0
         version: 2.23.0
@@ -128,6 +146,9 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.1
         version: 2.1.1(hono@4.13.3)
+      '@x402-sample/config':
+        specifier: workspace:*
+        version: link:../config
       '@x402/core':
         specifier: ^2.23.0
         version: 2.23.0

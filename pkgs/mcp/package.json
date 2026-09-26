@@ -9,13 +9,14 @@
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",
-    "cf:dev": "wrangler dev --port 8790",
-    "cf:deploy": "wrangler deploy"
+    "cf:dev": "node ../../scripts/wrangler.mjs dev --port 8790",
+    "cf:deploy": "node ../../scripts/wrangler.mjs deploy"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@privy-io/js-sdk-core": "^0.76.1",
     "@privy-io/node": "^0.34.0",
+    "@x402-sample/config": "workspace:*",
     "@x402/core": "^2.23.0",
     "@x402/evm": "^2.23.0",
     "@x402/fetch": "^2.23.0",

@@ -8,8 +8,8 @@
     "build": "tsc -p tsconfig.worker.json",
     "dev": "tsx watch src/index.ts",
     "cf:typecheck": "wrangler types && tsc -p tsconfig.worker.json",
-    "cf:dev": "wrangler dev --port 8789",
-    "cf:deploy": "wrangler deploy"
+    "cf:dev": "node ../../scripts/wrangler.mjs dev --port 8789",
+    "cf:deploy": "node ../../scripts/wrangler.mjs deploy"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +17,7 @@
   "packageManager": "pnpm@10.33.0",
   "dependencies": {
     "@hono/node-server": "^2.1.1",
+    "@x402-sample/config": "workspace:*",
     "@x402/core": "^2.23.0",
     "@x402/evm": "^2.23.0",
     "@x402/extensions": "^2.23.0",

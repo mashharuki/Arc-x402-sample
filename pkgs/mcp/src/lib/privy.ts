@@ -1,7 +1,7 @@
 import Privy from "@privy-io/js-sdk-core";
 import { PrivyClient } from "@privy-io/node";
 import { createViemAccount, type PrivyViemAccount } from "@privy-io/node/viem";
-import { CHAIN_NUMERIC_ID } from "../utils/constants.js";
+import { getChain } from "@x402-sample/config";
 import type { Env } from "../utils/env.js";
 import { fail, ok, type Result, toMessage } from "../utils/result.js";
 import type { WalletState } from "../utils/store.js";
@@ -162,8 +162,8 @@ export const provisionWallet = async (
     // ポリシーを作成して、委任キーに適用する
     const policy = await privy.policies().create(
       buildPolicy({
-        chainId: CHAIN_NUMERIC_ID,
-        asset: env.ASSET_ADDRESS,
+        chainId: getChain(env).id,
+        asset: env.ASSET_ADDRESS as `0x${string}`,
         maxAmount: env.MAX_AMOUNT_PER_PAYMENT,
         payees: env.ALLOWED_PAYEES,
       }),
