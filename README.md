@@ -60,7 +60,20 @@ sequenceDiagram
 3. **Step 2: enable x402.** Uncomment the block. The same request now gets `402 Payment Required`; the client signs, the facilitator verifies and settles on Arc Testnet, and the resource is returned.
 4. **Step 3: guardrails.** Run the `upto` scenarios in [Guardrails](#guardrails-with-the-upto-scheme). A settlement above the signed cap is rejected and no funds move.
 
-To use another chain or token, change the values listed under "Chain/asset config" in [CLAUDE.md](CLAUDE.md).
+To use another chain, token or price, see [Switch chain, token or price](#switch-chain-token-or-price).
+
+### Switch chain, token or price
+
+Everything that depends on the chain or token is in one file: [`pkgs/config/src/index.ts`](pkgs/config/src/index.ts). `server`, `facilitator`, `client` and `mcp` all import it.
+
+| What | Where in the file |
+|---|---|
+| Chain (a `viem/chains` definition) | `CHAIN` |
+| Token address, EIP-712 `name` / `version`, `decimals` | `TOKEN` (`name` and `version` must match the token's on-chain `name()` / `version()`) |
+| Prices (`/weather`, `/usage` per unit and maximum) | `PRICING`, written in token units such as `"0.5"` |
+| Spending limits | `LIMITS` |
+
+After changing the chain, fund the facilitator wallet with that chain's gas token. The Workers need a redeploy to pick up the change.
 
 ## setup
 
@@ -127,7 +140,6 @@ Set `pkgs/server/.env`. `EVM_ADDRESS` is the wallet address that receives paymen
 ```dotenv
 FACILITATOR_URL=http://localhost:4022
 EVM_ADDRESS=0x<recipient-wallet-address>
-ASSET_ADDRESS=0x3600000000000000000000000000000000000000
 ```
 
 Keep the facilitator running and start the server in a separate terminal.
@@ -158,9 +170,9 @@ Set `pkgs/client/.env`:
 PAYWALL_API_BASE_URL=http://localhost:4021
 PAYWALL_PATH=/weather
 EVM_PRIVATE_KEY=0x<payer-private-key>
-ASSET_ADDRESS=0x3600000000000000000000000000000000000000
-CHAIN_ID=5042002
 ```
+
+The chain, token and prices are not set in `.env`; they live in [`pkgs/config/src/index.ts`](pkgs/config/src/index.ts) (see [Switch chain, token or price](#switch-chain-token-or-price)).
 
 Fund the payer wallet with at least **0.5 Arc Testnet USDC** before running the client. Use the [Circle faucet](https://faucet.circle.com/): select **Arc Testnet**, request USDC, and enter the public address of the wallet whose key you set as `EVM_PRIVATE_KEY`. Each successful `/weather` request costs 0.5 USDC. Insufficient funds return `402` with `invalid_exact_evm_insufficient_balance`.
 
@@ -193,8 +205,8 @@ Spending is limited by three layers:
 
 | Layer | What limits spending | Where |
 |---|---|---|
-| Per payment (client) | The client refuses to sign a payment above `MAX_AMOUNT_PER_PAYMENT` (default `1000000` = 1 USDC) | `pkgs/client/src/config.ts` |
-| Per payment (signature) | The Permit2 signature authorizes at most the `upto` maximum; the facilitator rejects a larger settlement | `pkgs/server/src/config.ts` |
+| Per payment (client) | The client refuses to sign a payment above `MAX_AMOUNT_PER_PAYMENT` (default `LIMITS.maxAmountPerPayment` = 1 USDC) | `pkgs/config/src/index.ts` |
+| Per payment (signature) | The Permit2 signature authorizes at most the `upto` maximum (`PRICING.usageMax`); the facilitator rejects a larger settlement | `pkgs/config/src/index.ts` |
 | Total budget (on-chain) | The USDC allowance granted to Permit2 (never `maxUint256`) | `pkgs/client/src/approve.ts` |
 
 The MCP tool `set_budget` sets this Permit2 allowance. It applies to `/usage` (`upto`); `/weather` (`exact`) reduces the wallet balance without using the allowance.
@@ -312,7 +324,6 @@ The [Try every tool in one prompt](#try-every-tool-in-one-prompt) script below i
 PRIVY_APP_ID=
 PRIVY_APP_SECRET=
 PRIVY_CLIENT_ID=
-ASSET_ADDRESS=0x3600000000000000000000000000000000000000
 # comma separated. Use the x402 server's EVM_ADDRESS (the payTo address)
 ALLOWED_PAYEES=0x<recipient-wallet-address>
 # optional
@@ -384,7 +395,7 @@ pnpm --filter x402mcp exec wrangler secret put PRIVY_APP_SECRET
 
 ### Deploy to Cloudflare Workers
 
-Before deploying, fill in the public (non-secret) values: `ASSET_ADDRESS` and `EVM_ADDRESS` in `pkgs/server/wrangler.jsonc`, and `PRIVY_APP_ID`, `PRIVY_CLIENT_ID`, `ASSET_ADDRESS`, `ALLOWED_PAYEES` in `pkgs/mcp/wrangler.jsonc`. Full checklist and operational caveats: [`docs/cloudflare-deploy.md`](docs/cloudflare-deploy.md).
+Before deploying, fill in the public (non-secret) values: `EVM_ADDRESS` in `pkgs/server/wrangler.jsonc`, and `PRIVY_APP_ID`, `PRIVY_CLIENT_ID`, `ALLOWED_PAYEES` in `pkgs/mcp/wrangler.jsonc`. Full checklist and operational caveats: [`docs/cloudflare-deploy.md`](docs/cloudflare-deploy.md).
 
 Deploy in order, copying each printed URL into the next config before deploying it:
 
