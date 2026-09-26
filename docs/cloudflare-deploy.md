@@ -45,7 +45,7 @@ facilitator / server / mcp(リモートMCP)を Cloudflare Workers で動かす�
 }
 ```
 
-チェーン・トークン・価格は `vars` ではなく `pkgs/config/src/index.ts` にあり、Worker のビルドに含まれます。変更したら server / facilitator / mcp を再デプロイしてください。
+チェーン・トークン・価格(`CHAIN_NAME` / `ASSET_ADDRESS` / `TOKEN_*` / `PRICE_*` / `USAGE_*`)も各 `wrangler.jsonc` の `vars` に入っています(既定は Arc Testnet)。別のチェーンやトークンにするときは、README の「Switch chain, token or price」の表に沿って server / facilitator / mcp の `vars` を揃え、再デプロイしてください。値が足りない、または `CHAIN_NAME` が不正な場合、Worker は起動時に変数名つきの 500 エラーを返します。
 
 ファイルを編集せずに渡す場合: `pnpm --filter x402server exec wrangler deploy --var EVM_ADDRESS:0x...`(mcp も同様)。
 

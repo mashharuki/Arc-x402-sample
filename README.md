@@ -64,16 +64,16 @@ To use another chain, token or price, see [Switch chain, token or price](#switch
 
 ### Switch chain, token or price
 
-Everything that depends on the chain or token is in one file: [`pkgs/config/src/index.ts`](pkgs/config/src/index.ts). `server`, `facilitator`, `client` and `mcp` all import it.
+The chain, token and prices are read from each package's `.env` (`vars` in `wrangler.jsonc` on Workers). The code has no hardcoded values; how the variables are interpreted lives in [`pkgs/config/src/index.ts`](pkgs/config/src/index.ts). The defaults in every `.env.example` are for Arc Testnet.
 
-| What | Where in the file |
-|---|---|
-| Chain (a `viem/chains` definition) | `CHAIN` |
-| Token address, EIP-712 `name` / `version`, `decimals` | `TOKEN` (`name` and `version` must match the token's on-chain `name()` / `version()`) |
-| Prices (`/weather`, `/usage` per unit and maximum) | `PRICING`, written in token units such as `"0.5"` |
-| Spending limits | `LIMITS` |
+| Variable | Set in | Meaning |
+|---|---|---|
+| `CHAIN_NAME` | server, facilitator, client, mcp | A `viem/chains` export name such as `arcTestnet` or `baseSepolia` |
+| `ASSET_ADDRESS` | server, client, mcp | Address of the payment token |
+| `TOKEN_NAME`, `TOKEN_VERSION`, `TOKEN_DECIMALS` | server | The token's EIP-712 domain and decimals. `name` and `version` must match the token's on-chain `name()` / `version()`, otherwise verify reverts with `FiatTokenV2: invalid signature` |
+| `PRICE_WEATHER`, `USAGE_UNIT_PRICE`, `USAGE_MAX_AMOUNT` | server | Prices in token units (`0.5` = 0.5 USDC) |
 
-After changing the chain, fund the facilitator wallet with that chain's gas token. The Workers need a redeploy to pick up the change.
+To switch chain or token, change the same `CHAIN_NAME` / `ASSET_ADDRESS` in the four packages (and in `wrangler.jsonc` `vars` for Workers), fund the facilitator wallet with that chain's gas token, and redeploy the Workers. A missing or invalid value stops startup with an error that names the variable.
 
 ## setup
 
@@ -93,6 +93,7 @@ Set `pkgs/facilitator/.env`:
 
 ```dotenv
 EVM_PRIVATE_KEY=0x<facilitator-private-key>
+CHAIN_NAME=arcTestnet
 ```
 
 Fund the facilitator wallet with Arc Testnet USDC for transaction fees.
@@ -140,6 +141,14 @@ Set `pkgs/server/.env`. `EVM_ADDRESS` is the wallet address that receives paymen
 ```dotenv
 FACILITATOR_URL=http://localhost:4022
 EVM_ADDRESS=0x<recipient-wallet-address>
+CHAIN_NAME=arcTestnet
+ASSET_ADDRESS=0x3600000000000000000000000000000000000000
+TOKEN_NAME=USDC
+TOKEN_VERSION=2
+TOKEN_DECIMALS=6
+PRICE_WEATHER=0.5
+USAGE_UNIT_PRICE=0.1
+USAGE_MAX_AMOUNT=0.5
 ```
 
 Keep the facilitator running and start the server in a separate terminal.
@@ -170,9 +179,11 @@ Set `pkgs/client/.env`:
 PAYWALL_API_BASE_URL=http://localhost:4021
 PAYWALL_PATH=/weather
 EVM_PRIVATE_KEY=0x<payer-private-key>
+CHAIN_NAME=arcTestnet
+ASSET_ADDRESS=0x3600000000000000000000000000000000000000
 ```
 
-The chain, token and prices are not set in `.env`; they live in [`pkgs/config/src/index.ts`](pkgs/config/src/index.ts) (see [Switch chain, token or price](#switch-chain-token-or-price)).
+`CHAIN_NAME` and `ASSET_ADDRESS` must match the server (see [Switch chain, token or price](#switch-chain-token-or-price)).
 
 Fund the payer wallet with at least **0.5 Arc Testnet USDC** before running the client. Use the [Circle faucet](https://faucet.circle.com/): select **Arc Testnet**, request USDC, and enter the public address of the wallet whose key you set as `EVM_PRIVATE_KEY`. Each successful `/weather` request costs 0.5 USDC. Insufficient funds return `402` with `invalid_exact_evm_insufficient_balance`.
 
@@ -205,8 +216,8 @@ Spending is limited by three layers:
 
 | Layer | What limits spending | Where |
 |---|---|---|
-| Per payment (client) | The client refuses to sign a payment above `MAX_AMOUNT_PER_PAYMENT` (default `LIMITS.maxAmountPerPayment` = 1 USDC) | `pkgs/config/src/index.ts` |
-| Per payment (signature) | The Permit2 signature authorizes at most the `upto` maximum (`PRICING.usageMax`); the facilitator rejects a larger settlement | `pkgs/config/src/index.ts` |
+| Per payment (client) | The client refuses to sign a payment above `MAX_AMOUNT_PER_PAYMENT` (default `1000000` = 1 USDC) | `pkgs/client/src/config.ts` |
+| Per payment (signature) | The Permit2 signature authorizes at most the `upto` maximum (`USAGE_MAX_AMOUNT`); the facilitator rejects a larger settlement | `pkgs/server/.env` |
 | Total budget (on-chain) | The USDC allowance granted to Permit2 (never `maxUint256`) | `pkgs/client/src/approve.ts` |
 
 The MCP tool `set_budget` sets this Permit2 allowance. It applies to `/usage` (`upto`); `/weather` (`exact`) reduces the wallet balance without using the allowance.
@@ -324,6 +335,8 @@ The [Try every tool in one prompt](#try-every-tool-in-one-prompt) script below i
 PRIVY_APP_ID=
 PRIVY_APP_SECRET=
 PRIVY_CLIENT_ID=
+CHAIN_NAME=arcTestnet
+ASSET_ADDRESS=0x3600000000000000000000000000000000000000
 # comma separated. Use the x402 server's EVM_ADDRESS (the payTo address)
 ALLOWED_PAYEES=0x<recipient-wallet-address>
 # optional
