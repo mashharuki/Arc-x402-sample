@@ -8,11 +8,9 @@ dotenv.config();
 // チェーン・トークン・価格は共有設定(pkgs/config/.env)から読み込む
 loadSharedEnv();
 
-const { FACILITATOR_URL, EVM_ADDRESS } = process.env;
-if (!FACILITATOR_URL || !EVM_ADDRESS) {
-  console.error(
-    "❌ FACILITATOR_URL and EVM_ADDRESS environment variables are required",
-  );
+const { FACILITATOR_URL } = process.env;
+if (!FACILITATOR_URL) {
+  console.error("❌ FACILITATOR_URL environment variable is required");
   process.exit(1);
 }
 

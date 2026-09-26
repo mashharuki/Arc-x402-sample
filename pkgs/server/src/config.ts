@@ -1,6 +1,7 @@
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import {
   getChainId,
+  getPayeeAddress,
   getPricing,
   getToken,
   type SharedEnv,
@@ -10,19 +11,19 @@ import {
 // 変数名の解釈は pkgs/config/src/index.ts にある
 export type ServerEnv = SharedEnv & {
   FACILITATOR_URL: string;
-  EVM_ADDRESS: string;
 };
 
 /** 環境変数に不足や不正があればここで投げる(起動時に呼んで早く失敗させる) */
 export const resolveServerConfig = (env: ServerEnv) => ({
   chainId: getChainId(env),
+  payTo: getPayeeAddress(env),
   token: getToken(env),
   pricing: getPricing(env),
 });
 
 // x402に関する設定
 export const createX402Config = (env: ServerEnv) => {
-  const { chainId, token, pricing } = resolveServerConfig(env);
+  const { chainId, payTo, token, pricing } = resolveServerConfig(env);
   // 決済トークンのEIP-712ドメイン。オンチェーンの name() / version() と一致させる必要がある
   const assetExtra = { name: token.name, version: token.version };
 
@@ -37,7 +38,7 @@ export const createX402Config = (env: ServerEnv) => {
             extra: assetExtra,
           },
           network: chainId,
-          payTo: env.EVM_ADDRESS as `0x${string}`,
+          payTo,
         },
       ],
       description:
@@ -63,7 +64,7 @@ export const createX402Config = (env: ServerEnv) => {
             extra: assetExtra,
           },
           network: chainId,
-          payTo: env.EVM_ADDRESS as `0x${string}`,
+          payTo,
         },
       ],
       description:
