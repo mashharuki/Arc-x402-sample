@@ -1,5 +1,7 @@
 # Arc-x402-sample
 
+（[日本語版 README](README_ja.md)）
+
 This repo is sample code for Arc Testnet x402 
 
 ## Architecture
