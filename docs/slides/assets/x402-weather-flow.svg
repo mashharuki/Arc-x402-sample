@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="420" viewBox="0 0 1120 420">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#22d3ee"/></marker></defs>
+<style>text{font-family:Arial,"Hiragino Sans",sans-serif;fill:#e8ecf4;font-size:22px}.label{paint-order:stroke;stroke:#0b0f1a;stroke-width:8px;stroke-linejoin:round}</style>
+<rect x="42" y="0" width="146" height="37" rx="6" fill="#141b2d"/>
+<text x="115" y="27" text-anchor="middle">Client</text>
+<line x1="115" y1="40" x2="115" y2="418" stroke="#26314d" stroke-dasharray="5 5"/>
+<rect x="372" y="0" width="146" height="37" rx="6" fill="#141b2d"/>
+<text x="445" y="27" text-anchor="middle">Server</text>
+<line x1="445" y1="40" x2="445" y2="418" stroke="#26314d" stroke-dasharray="5 5"/>
+<rect x="692" y="0" width="146" height="37" rx="6" fill="#141b2d"/>
+<text x="765" y="27" text-anchor="middle">Facilitator</text>
+<line x1="765" y1="40" x2="765" y2="418" stroke="#26314d" stroke-dasharray="5 5"/>
+<rect x="972" y="0" width="146" height="37" rx="6" fill="#141b2d"/>
+<text x="1045" y="27" text-anchor="middle">Arc Testnet</text>
+<line x1="1045" y1="40" x2="1045" y2="418" stroke="#26314d" stroke-dasharray="5 5"/>
+<line x1="115" y1="77" x2="445" y2="77" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" />
+<text class="label" x="280.0" y="69" text-anchor="middle">① GET /weather</text>
+<line x1="445" y1="120" x2="115" y2="120" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="5 4"/>
+<text class="label" x="280.0" y="112" text-anchor="middle">② 402 · PAYMENT-REQUIRED</text>
+<text class="label" x="210" y="151" text-anchor="middle" fill="#fbbf24">③ 0.5 USDC を認可する署名</text>
+<line x1="115" y1="192" x2="445" y2="192" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" />
+<text class="label" x="280.0" y="184" text-anchor="middle">④ 再送 · PAYMENT-SIGNATURE</text>
+<line x1="445" y1="235" x2="765" y2="235" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" />
+<text class="label" x="605.0" y="227" text-anchor="middle">⑤ /verify · 条件を検証</text>
+<line x1="765" y1="275" x2="445" y2="275" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="5 4"/>
+<text class="label" x="605.0" y="267" text-anchor="middle">検証 OK</text>
+<line x1="445" y1="315" x2="765" y2="315" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" />
+<text class="label" x="605.0" y="307" text-anchor="middle">⑥ /settle</text>
+<line x1="765" y1="352" x2="1045" y2="352" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" />
+<text class="label" x="905.0" y="344" text-anchor="middle">送金 tx → 確認</text>
+<line x1="765" y1="384" x2="445" y2="384" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="5 4"/>
+<text class="label" x="605.0" y="376" text-anchor="middle">決済成功 · tx hash</text>
+<line x1="445" y1="418" x2="115" y2="418" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="5 4"/>
+<text class="label" x="280.0" y="410" text-anchor="middle">⑦ 200 · データ · PAYMENT-RESPONSE</text>
+</svg>

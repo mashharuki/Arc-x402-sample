@@ -1,8 +1,19 @@
-cp pkgs/client/.env.example pkgs/client/.env
-cp pkgs/server/.env.example pkgs/server/.env
-cp pkgs/server/.dev.vars.example pkgs/server/.dev.vars
-cp pkgs/facilitator/.env.example pkgs/facilitator/.env
-cp pkgs/facilitator/.dev.vars.example pkgs/facilitator/.dev.vars
-cp pkgs/mcp/.env.example pkgs/mcp/.env
-cp pkgs/mcp/.dev.vars.example pkgs/mcp/.dev.vars
-cp pkgs/config/.env.example pkgs/config/.env
+#!/bin/sh
+set -eu
+
+# Keep settings filled in during workshop preparation when setup is run again.
+for example in \
+  pkgs/client/.env.example \
+  pkgs/server/.env.example pkgs/server/.dev.vars.example \
+  pkgs/facilitator/.env.example pkgs/facilitator/.dev.vars.example \
+  pkgs/mcp/.env.example pkgs/mcp/.dev.vars.example \
+  pkgs/config/.env.example
+do
+  target=${example%.example}
+  if [ -e "$target" ]; then
+    printf 'Keeping %s\n' "$target"
+  else
+    cp "$example" "$target"
+    printf 'Created %s\n' "$target"
+  fi
+done

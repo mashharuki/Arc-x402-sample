@@ -8,7 +8,7 @@
 
 facilitator・リソースサーバー・MCP サーバーという3つの独立したサービスが、ローカルの Node プロセスとしても、同じソースから Cloudflare Workers としても動作します。ウォレット認証・署名には Privy を、決済には Arc Testnet を使用します。
 
-**なぜ Base/Ethereum メインネットではなく Arc なのか？** Arc は Circle 自身の EVM 互換 Layer 1 です。Ethereum の L2 / ロールアップではなく、独自のコンセンサスと決済を持つスタンドアロンチェーンで、ステーブルコイン決済のために作られています（USDC をネイティブガストークンとして使用し、サブセカンドの確定的ファイナリティを持ちます）。EVM 互換であるため、このリポジトリで使われているもの（viem、EIP-712 の typed-data 署名、EIP-3009 の `transferWithAuthorization`、Solidity スタイルのトークンコントラクト）は、Ethereum / Base 上の x402 実装と同じツール群です。変わるのは RPC URL・チェーン ID・USDC コントラクトアドレスだけで、このリポジトリの x402 ロジック自体に Arc 固有の部分はありません。
+**なぜ Base/Ethereum メインネットではなく Arc なのか？** Arc は Circle 自身の EVM 互換 Layer 1 です。Ethereum の L2 / ロールアップではなく、独自のコンセンサスと決済を持つスタンドアロンチェーンで、ステーブルコイン決済のために作られています（USDC をネイティブガストークンとして使用し、サブセカンドの確定的ファイナリティを持ちます）。EVM 互換であるため、このリポジトリで使われているもの（viem、EIP-712 の typed-data 署名、EIP-3009 の `transferWithAuthorization`、Solidity スタイルのトークンコントラクト）は、Ethereum / Base 上の x402 実装と同じツール群です。対応する EVM チェーンへ処理を移植できますが、トークンの署名ドメイン・decimals、決済方式に必要なコントラクト、ガス資金、既存の Privy ウォレットのポリシーも確認が必要です。アドレスの差し替えだけではありません。
 
 ![Architecture](docs/diagrams/architecture.svg)
 
@@ -28,13 +28,13 @@ sequenceDiagram
     Agent->>Server: ① GET /weather (no payment)
     Server-->>Agent: ② 402 Payment Required<br/>accepts: [{scheme, price, asset, network}]
     Note over Agent: ③ sign payment payload<br/>(EIP-712 authorization, wallet)
-    Agent->>Server: ④ retry GET /weather<br/>+ X-PAYMENT header
+    Agent->>Server: ④ retry GET /weather<br/>+ PAYMENT-SIGNATURE header
     Server->>Facilitator: ⑤ POST /verify<br/>(signature, cap, scheme)
     Facilitator-->>Server: valid
     Note over Server: ⑥ run handler<br/>(e.g. return weather data)
     Server->>Facilitator: ⑦ POST /settle
     alt requested amount ≤ signed cap
-        Facilitator->>Chain: ⑧ transferWithAuthorization<br/>(broadcast)
+        Facilitator->>Chain: ⑧ on-chain settlement<br/>(EIP-3009 / Permit2)
         Chain-->>Facilitator: tx success
         Facilitator-->>Server: settled (tx hash)
         Server-->>Agent: ⑨ 200 OK + body<br/>+ payment receipt (tx hash)
@@ -48,25 +48,38 @@ sequenceDiagram
 
 ### 前提条件
 
-| 必要なもの | 入手先 |
+事前に準備してください。必須実習はローカルの Node と CLI ウォレットで進めます。最後に Claude Code + MCP へ接続し、未準備の参加者は講師デモで確認します。CLI と Privy は別ウォレットなので、それぞれに入金が必要です。
+
+| 必要なもの | 入手先・用途 |
 |---|---|
-| Node.js 20+ と pnpm | `corepack enable` |
-| Privy アカウント（App ID / Secret / Client ID） | [dashboard.privy.io](https://dashboard.privy.io) |
-| Cloudflare アカウント（Workers Free） | [dash.cloudflare.com](https://dash.cloudflare.com) |
-| Arc Testnet USDC | [faucet.circle.com](https://faucet.circle.com) |
+| Node.js 20+ と pnpm | `corepack enable` — CLI 実習に必須 |
+| 支払者・facilitator のテスト用ウォレット | 各パッケージの `EVM_PRIVATE_KEY` に別々の鍵を設定 |
+| Arc Testnet USDC | [faucet.circle.com](https://faucet.circle.com) — 支払者は2 USDC以上＋ガス分、facilitator はガス分 |
+| モデルを利用できる Claude Code 環境 | 参加者自身が MCP 接続を試す場合に必要 |
+| Privy の App ID / Secret / Client ID | [dashboard.privy.io](https://dashboard.privy.io) — MCP 用。メール認証と Allowed origins を事前設定 |
+| Cloudflare アカウント（Workers Free） | [dash.cloudflare.com](https://dash.cloudflare.com) — 任意のデプロイに必要 |
 
 ### 手順
 
-1. **Step 0: セットアップ。** `pnpm i && pnpm run setup` を実行し、各 `pkgs/*/.env` を埋めます（[How to work](#how-to-work) 参照）。
-2. **Step 1: x402 なしのサーバー。** `pkgs/server/src/app.ts` の `===== STEP 2 =====` マーカーの間のブロックをコメントアウトしてサーバーを起動します。`/weather` は 402 も支払いもなく 200 を返します。
-3. **Step 2: x402 を有効化。** コメントアウトを解除します。同じリクエストが今度は `402 Payment Required` を返すようになり、クライアントが署名し、facilitator が verify・settle を行った上でリソースが返されます。
-4. **Step 3: ガードレール。** [Guardrails](#upto-スキームによるガードレール) の `upto` シナリオを実行します。署名された上限を超える決済は拒否され、資金は移動しません。
+1. **Step 0: 準備確認（10〜15分）。** `pnpm i && pnpm run setup` 後、各 `.env` と `pkgs/config/.env` の `PAYEE_ADDRESS` を設定します（[How to work](#how-to-work) 参照）。setup は不足ファイルだけを作り、既存の `.env` / `.dev.vars` を保持します。合格条件はファイル作成ではなく、設定・接続先・入金の確認です。
+2. **Step 1: 無料で取得（15分まで）。** `pkgs/server/src/app.ts` の STEP 2 マーカー間のミドルウェアをコメントアウト。ターミナル A で `pnpm x402server run dev` を起動したままにし、別の B で `curl -i http://localhost:4021/weather` を実行します。HTTP 200 と天気データが返れば合格。支払いは発生しません。
+3. **Step 2: 402 を観察して支払う（15〜25分）。** 別のターミナル C で `pnpm facilitator run dev` を起動し、B で `curl http://localhost:4022/supported` を確認。ミドルウェアを戻して A の server を再起動します。B で `curl -i http://localhost:4021/weather` を実行し、402 と `PAYMENT-REQUIRED` の支払い条件を確認。その後 `PAYWALL_PATH=/weather` で `pnpm x402client run dev` を実行。天気データと、`Payment settled` の `success: true`・tx hash が合格条件です。
+4. **Step 3: 3ケースを確認（25〜35分）。** [Guardrails](#upto-スキームによるガードレール) に沿って2 USDCを approve し、`guardrails` を実行。合格は summary の3件すべてが `PASS`：0.3 USDCの決済成功、署名上限0.5 USDCを超える1.0 USDC決済の拒否、client上限による署名前の拒否です。最初のケースでは送金があり、拒否ケースではありません。**2 USDC の予算枯渇を検証する手順ではありません。**
+5. **MCP 接続・講師デモ（35〜45分）。** [MCP の設定](#claude-code-向け-mcp-サーバーprivy-ユーザー所有ウォレット) に沿って接続し、認証後の Privy ウォレットに入金。人間が `/usage` の予算を承認してから `/usage?units=3` の成功と `/usage?units=10` の拒否を比較します。準備が未完了なら講師デモで確認し、CLI の問題はサポートへ。最後の5分は質疑です。
 
-別のチェーン・トークン・価格を使う場合は [Switch chain, token or price](#チェーントークン価格の切り替え) を参照してください。
+`PAYMENT-REQUIRED` の値は Base64 JSON です。支払い条件を読むには、公開メタデータであるヘッダー値を以下に貼り付けます。
+
+```bash
+printf '%s' '<PAYMENT-REQUIRED value>' | node -e 'let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>console.log(JSON.stringify(JSON.parse(Buffer.from(s,"base64").toString()),null,2)))'
+```
+
+標準の `/weather` は `exact`、500000 atomic units（0.5 USDC）、Arc Testnet、設定した受取先です。支払い付き再リクエストは `PAYMENT-SIGNATURE`、決済レシートは `PAYMENT-RESPONSE` を使います（x402 v2）。
+
+セッション後の追加課題は [Workers デプロイ](#cloudflare-workers-へのデプロイ) と [対応 EVM チェーン・トークン・価格の変更](#チェーントークン価格の切り替え) です。
 
 ### チェーン・トークン・価格の切り替え
 
-チェーン・トークン・価格は4つのパッケージすべてで共有されており、**`pkgs/config/.env`（1ファイル）** に集約されています（`pnpm setup` により [`pkgs/config/.env.example`](pkgs/config/.env.example) から作成され、デフォルトは Arc Testnet です）。チェーン・トークン・価格を切り替えるのに編集が必要なのはこのファイルだけです。シークレット（秘密鍵、`PRIVY_APP_SECRET`）とパッケージ固有の値（URL、受取アドレス）は各パッケージ自身の `.env` に残ります。
+チェーン・トークン・価格は4つのパッケージすべてで共有されており、**`pkgs/config/.env`（1ファイル）** に集約されています（`pnpm setup` により [`pkgs/config/.env.example`](pkgs/config/.env.example) から作成され、デフォルトは Arc Testnet です）。対応 EVM チェーン・トークン・価格の共有設定はこのファイルで変更します。決済方式の対応コントラクト・署名ドメイン・decimals・ガス資金も確認し、許可するチェーン・トークン・受取先を変更した場合は既存 Privy ウォレットのポリシーも更新してください。シークレット（秘密鍵、`PRIVY_APP_SECRET`）とパッケージ固有の値（URL、受取アドレス）は各パッケージ自身の `.env` に残ります。
 
 | 変数 | 使用箇所 | 意味 |
 |---|---|---|
@@ -218,7 +231,7 @@ Payment settled: {
 | 1回あたり（署名） | Permit2 の署名は `upto` の上限（`USAGE_MAX_AMOUNT`）までしか承認せず、facilitator はそれを超える決済を拒否する | `pkgs/config/.env` |
 | 合計予算（オンチェーン） | Permit2 に付与された USDC の allowance（`maxUint256` は使用しない） | `pkgs/client/src/approve.ts` |
 
-MCP ツール `set_budget` はこの Permit2 の allowance を設定します。これは `/usage`（`upto`）に適用され、`/weather`（`exact`）は allowance を使わずウォレット残高を直接減らします。
+MCP ツール `set_budget` はこの Permit2 の allowance を設定します。これは `/usage`（`upto`）に適用され、`/weather`（`exact`）は allowance を使わずウォレット残高を直接減らします。ガス代もこの予算には含まれません。approve は残りの承認額を設定し直す操作であり、入金でも生涯の累積支出制限でもありません。
 
 `upto` フローは gas-sponsoring 拡張を使用しないため、クライアントは少額の USDC を gas 用に保持しておく必要があります。
 
@@ -290,7 +303,7 @@ PASS  3. client側の上限による拒否 - 署名前に拒否された: Failed
 
 [Arc Testnet Explorer upto決済のトランザクション 0xd72d264486fbc0924aa5ef111085c0770280db55e3e1351950bc79b11fedcfc1](https://explorer.testnet.arc.io/tx/0xd72d264486fbc0924aa5ef111085c0770280db55e3e1351950bc79b11fedcfc1)
 
-まだスクリプトでカバーされていないもの: allowance の枯渇（`approve 0 --execute` を実行した後 `guardrails` を実行し、`approve 2000000 --execute` で復元する）と、署名の有効期限切れ（`maxTimeoutSeconds`、300秒）。
+まだスクリプトでカバーされていないもの: allowance が0の場合の拒否（`approve 0 --execute` を実行した後 `guardrails` を実行し、`approve 2000000 --execute` で復元する）と、署名の有効期限切れ（`maxTimeoutSeconds`、300秒）。
 
 ## Claude Code 向け MCP サーバー（Privy ユーザー所有ウォレット）
 

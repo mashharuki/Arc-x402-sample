@@ -8,7 +8,7 @@ This repo is sample code for Arc Testnet x402
 
 Three independent services (facilitator, resource server, MCP server) that run either as local Node processes or as Cloudflare Workers from the same source, plus Privy for wallet auth/signing and Arc Testnet for settlement.
 
-**Why Arc, not Base/Ethereum mainnet?** Arc is Circle's own EVM-compatible Layer 1 — a standalone chain with its own consensus and settlement, not an Ethereum L2/rollup — purpose-built for stablecoin finance: USDC as the native gas asset and sub-second deterministic finality. Being EVM-compatible means everything here (viem, EIP-712 typed-data signing, EIP-3009 `transferWithAuthorization`, Solidity-style token contracts) is the same tooling any Ethereum/Base x402 integration would use; only the RPC URL, chain ID and USDC contract address change. Nothing in this repo's x402 logic is Arc-specific.
+**Why Arc, not Base/Ethereum mainnet?** Arc is Circle's own EVM-compatible Layer 1 — a standalone chain with its own consensus and settlement, not an Ethereum L2/rollup — purpose-built for stablecoin finance: USDC as the native gas asset and sub-second deterministic finality. Being EVM-compatible means everything here (viem, EIP-712 typed-data signing, EIP-3009 `transferWithAuthorization`, Solidity-style token contracts) is the same tooling any Ethereum/Base x402 integration would use; the application flow can be reused across supported EVM chains. Migration also requires checking the token's EIP-712 domain and decimals, scheme contract availability, gas funding, and any existing Privy wallet policies; it is not just an address change.
 
 ![Architecture](docs/diagrams/architecture.svg)
 
@@ -28,13 +28,13 @@ sequenceDiagram
     Agent->>Server: ① GET /weather (no payment)
     Server-->>Agent: ② 402 Payment Required<br/>accepts: [{scheme, price, asset, network}]
     Note over Agent: ③ sign payment payload<br/>(EIP-712 authorization, wallet)
-    Agent->>Server: ④ retry GET /weather<br/>+ X-PAYMENT header
+    Agent->>Server: ④ retry GET /weather<br/>+ PAYMENT-SIGNATURE header
     Server->>Facilitator: ⑤ POST /verify<br/>(signature, cap, scheme)
     Facilitator-->>Server: valid
     Note over Server: ⑥ run handler<br/>(e.g. return weather data)
     Server->>Facilitator: ⑦ POST /settle
     alt requested amount ≤ signed cap
-        Facilitator->>Chain: ⑧ transferWithAuthorization<br/>(broadcast)
+        Facilitator->>Chain: ⑧ on-chain settlement<br/>(EIP-3009 / Permit2)
         Chain-->>Facilitator: tx success
         Facilitator-->>Server: settled (tx hash)
         Server-->>Agent: ⑨ 200 OK + body<br/>+ payment receipt (tx hash)
@@ -48,25 +48,38 @@ sequenceDiagram
 
 ### Prerequisites
 
-| Need | Where |
+Prepare these before the session. The required hands-on uses local Node processes and a CLI wallet. Claude Code + MCP is the final integration; attendees who are not ready can follow the instructor demo. The CLI and Privy wallets are separate and must be funded separately.
+
+| Need | Where / when |
 |---|---|
-| Node.js 20+ and pnpm | `corepack enable` |
-| Privy account (App ID / Secret / Client ID) | [dashboard.privy.io](https://dashboard.privy.io) |
-| Cloudflare account (Workers Free) | [dash.cloudflare.com](https://dash.cloudflare.com) |
-| Arc Testnet USDC | [faucet.circle.com](https://faucet.circle.com) |
+| Node.js 20+ and pnpm | `corepack enable` — required for CLI hands-on |
+| Payer and facilitator test wallets | Fill `EVM_PRIVATE_KEY` in each package; use separate test wallets |
+| Arc Testnet USDC | [faucet.circle.com](https://faucet.circle.com) — payer: at least 2 USDC plus gas; facilitator: gas funds |
+| Claude Code with access to a model | Required for the optional attendee MCP integration |
+| Privy account (App ID / Secret / Client ID) | [dashboard.privy.io](https://dashboard.privy.io) — configure email login and Allowed origins before MCP integration |
+| Cloudflare account (Workers Free) | [dash.cloudflare.com](https://dash.cloudflare.com) — only for optional deployment |
 
 ### Steps
 
-1. **Step 0: setup.** `pnpm i && pnpm run setup`, then fill each `pkgs/*/.env` (see [How to work](#how-to-work)).
-2. **Step 1: server without x402.** In `pkgs/server/src/app.ts`, comment out the block between `===== STEP 2 =====` markers and start the server. `/weather` returns 200 with no 402 and no payment.
-3. **Step 2: enable x402.** Uncomment the block. The same request now gets `402 Payment Required`; the client signs, the facilitator verifies and settles on Arc Testnet, and the resource is returned.
-4. **Step 3: guardrails.** Run the `upto` scenarios in [Guardrails](#guardrails-with-the-upto-scheme). A settlement above the signed cap is rejected and no funds move.
+1. **Step 0: readiness (10–15 min).** Run `pnpm i && pnpm run setup`, then fill the `.env` settings (see [How to work](#how-to-work)), including `PAYEE_ADDRESS` in `pkgs/config/.env`. Setup creates missing files and keeps existing `.env` / `.dev.vars` files. File creation alone is not readiness: confirm the addresses, URLs and funds above.
+2. **Step 1: free response (by 15 min).** In `pkgs/server/src/app.ts`, comment out the middleware block between the STEP 2 markers. In terminal A, run `pnpm x402server run dev`; keep it running. In terminal B, run `curl -i http://localhost:4021/weather`. Pass: HTTP 200 and weather data, without a payment.
+3. **Step 2: observe 402, then pay (15–25 min).** In terminal C, run `pnpm facilitator run dev`; keep it running. Check `curl http://localhost:4022/supported` in terminal B. Restore the middleware block and restart the server in terminal A. In B, run `curl -i http://localhost:4021/weather`: expect 402 with a Base64-encoded `PAYMENT-REQUIRED` header describing the price and payee. Then run `pnpm x402client run dev` with `PAYWALL_PATH=/weather`. Pass: weather data and `Payment settled` with `success: true` and a transaction hash.
+4. **Step 3: three guardrail cases (25–35 min).** Follow [Guardrails](#guardrails-with-the-upto-scheme): approve 2 USDC, then run `guardrails`. Pass: three `PASS` entries in the summary — a 0.3 USDC settlement, refusal of a 1.0 USDC settlement above the signed 0.5 USDC cap, and rejection before signing when the client's cap is too low. The first case moves funds; the rejected cases do not. This does **not** test exhaustion of the 2 USDC allowance.
+5. **MCP integration / instructor demo (35–45 min).** Follow [MCP setup](#mcp-server-for-claude-code-privy-user-owned-wallet), log in, fund the separate Privy wallet, and explicitly approve the `/usage` budget. Compare the successful `/usage?units=3` payment with the rejected `/usage?units=10` payment. If setup is incomplete, follow the instructor demo; remaining CLI issues can be handled with a helper. The final 5 minutes are for questions.
 
-To use another chain, token or price, see [Switch chain, token or price](#switch-chain-token-or-price).
+To inspect payment requirements, copy the `PAYMENT-REQUIRED` header value into this command (the payload is public payment metadata):
+
+```bash
+printf '%s' '<PAYMENT-REQUIRED value>' | node -e 'let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>console.log(JSON.stringify(JSON.parse(Buffer.from(s,"base64").toString()),null,2)))'
+```
+
+The default `/weather` requirements are `exact`, 500000 atomic units (0.5 USDC), Arc Testnet, and your configured payee. The paid retry uses `PAYMENT-SIGNATURE`; the settlement receipt uses `PAYMENT-RESPONSE` (x402 v2).
+
+After the session, try [Workers deployment](#deploy-to-cloudflare-workers) or [switching a supported EVM chain, token or price](#switch-chain-token-or-price).
 
 ### Switch chain, token or price
 
-The chain, token and prices are shared by all four packages, so they live in **one file: `pkgs/config/.env`** (created from [`pkgs/config/.env.example`](pkgs/config/.env.example) by `pnpm setup`, defaults are Arc Testnet). It is the only file you edit to switch chain, token or price. Secrets (private keys, `PRIVY_APP_SECRET`) and per-package values (URLs, the payee address) stay in each package's own `.env`.
+The chain, token and prices are shared by all four packages, so they live in **one file: `pkgs/config/.env`** (created from [`pkgs/config/.env.example`](pkgs/config/.env.example) by `pnpm setup`, defaults are Arc Testnet). It holds the shared configuration for switching a supported EVM chain, token or price. Also check the scheme's contract availability, token domain/decimals, gas funding, and update policies for existing Privy wallets when their allowed chain, asset or payee changes. Secrets (private keys, `PRIVY_APP_SECRET`) and per-package values (URLs, the payee address) stay in each package's own `.env`.
 
 | Variable | Used by | Meaning |
 |---|---|---|
@@ -218,7 +231,7 @@ Spending is limited by three layers:
 | Per payment (signature) | The Permit2 signature authorizes at most the `upto` maximum (`USAGE_MAX_AMOUNT`); the facilitator rejects a larger settlement | `pkgs/config/.env` |
 | Total budget (on-chain) | The USDC allowance granted to Permit2 (never `maxUint256`) | `pkgs/client/src/approve.ts` |
 
-The MCP tool `set_budget` sets this Permit2 allowance. It applies to `/usage` (`upto`); `/weather` (`exact`) reduces the wallet balance without using the allowance.
+The MCP tool `set_budget` sets this Permit2 allowance. It applies to `/usage` (`upto`); `/weather` (`exact`) reduces the wallet balance without using the allowance. Gas is also outside this budget. Approving again resets the remaining allowance; it does not deposit funds or enforce a lifetime spending total.
 
 The client needs a small amount of USDC for gas, because the `upto` flow does not use gas-sponsoring extensions.
 
@@ -290,7 +303,7 @@ PASS  3. client側の上限による拒否 - 署名前に拒否された: Failed
 
 [Arc Testnet Explorer upto決済のトランザクション 0xd72d264486fbc0924aa5ef111085c0770280db55e3e1351950bc79b11fedcfc1](https://explorer.testnet.arc.io/tx/0xd72d264486fbc0924aa5ef111085c0770280db55e3e1351950bc79b11fedcfc1)
 
-Not covered by the script yet: allowance exhaustion (run `approve 0 --execute`, then `guardrails`; restore with `approve 2000000 --execute`) and signature expiry (`maxTimeoutSeconds`, 300 s).
+Not covered by the script yet: zero-allowance rejection (run `approve 0 --execute`, then `guardrails`; restore with `approve 2000000 --execute`) and signature expiry (`maxTimeoutSeconds`, 300 s).
 
 ## MCP server for Claude Code (Privy user-owned wallet)
 
