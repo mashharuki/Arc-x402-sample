@@ -1,4 +1,4 @@
-# ワークショップ手順
+# x402 × Arc ハンズオン：Cloudflare Workersで作る、自然言語で動くAIエージェント決済
 
 ## このワークショップで目指すもの
 
@@ -17,7 +17,7 @@ x402のスキームを実現するために必要な3つの要素を**Cloudflare
 このワークショップの内容を最後まで実践することであなたは以下のことを理解することができます。
 
 - x402スキーム
-- CloudFlare Workersにx402スキームに必要なリソースをデプロイする方法
+- Cloudflare Workersにx402スキームに必要なリソースをデプロイする方法
 - 任意のチェーン・アセットを設定する方法
   - 今回のワークショップではArcテストネットのUSDCを使いますが、他のチェーンやアセットを設定する方法もコードを見れば理解できるようになっています。
 - 自然言語でx402決済を実現させる方法
@@ -94,6 +94,13 @@ pnpm run -r build
 | `pkgs/facilitator/.env` | `EVM_PRIVATE_KEY` | 決済トランザクションを送るウォレットの秘密鍵（ガス代を払う） |
 | `pkgs/client/.env` | `EVM_PRIVATE_KEY` | 支払い側のウォレットの秘密鍵 |
 
+秘密鍵は**MetaMask**からコピーして使います。
+
+1. MetaMaskで、このワークショップ専用の**新しいアカウント**を2つ作成します（例：`x402-client`と`x402-facilitator`）
+2. 各アカウントで **︙（アカウントの詳細）→ 秘密鍵を表示** を開き、パスワードを入力して秘密鍵をコピーします
+3. clientのアカウントの秘密鍵を`pkgs/client/.env`、facilitatorのアカウントの秘密鍵を`pkgs/facilitator/.env`の`EVM_PRIVATE_KEY`に貼り付けます（`0x`から始まる形式にしてください）
+4. `PAYEE_ADDRESS`には、受取用のアドレスを設定します。**clientとは別のアドレス**にしてください（同じだと自分宛ての送金になり、残高の変化で決済を確認できません）。MetaMaskにもう1つアカウントを作って、そのアドレスを使うと分かりやすいです
+
 > ⚠️ 秘密鍵は**テスト専用のウォレット**のものを使ってください。メインのウォレットの秘密鍵は絶対に入れないでください。`.env`はGit管理外ですが、チャットなどにも貼らないでください。
 
 チェーンやトークン、価格は`pkgs/config/.env`にまとまっています（デフォルトは**Arc Testnet**のUSDC）。このファイルを書き換えるだけで、他のチェーンやアセットに切り替えられます。
@@ -129,7 +136,7 @@ pnpm start
 
 止めるときは`pnpm stop`です。
 
-## 動作確認
+## 動作確認（ローカル）
 
 ### 1. 起動確認
 
@@ -184,7 +191,7 @@ pnpm x402client run guardrails
 
 AIエージェントにお金を扱わせる場合に重要な「支払いの上限を何重にもかける」考え方を、ここで体験できます。
 
-## CloudFlare Workersにデプロイ
+## Cloudflare Workersにデプロイ
 
 ここまでローカルで動かした3つの要素を、**Cloudflare Workers**にデプロイします。あわせて、AI Agentから自然言語で決済するための**MCPサーバー**もデプロイします。
 
@@ -197,7 +204,19 @@ pnpm --filter facilitator exec wrangler whoami
 
 デプロイ先のアカウントが正しいか確認してください。また、[Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages)で`workers.dev`のサブドメインが未設定の場合は先に設定しておきます。
 
-### 2. シークレットを登録する
+### 2. Privyの設定をする
+
+MCPサーバーでウォレットを作るために、[Privy Dashboard](https://dashboard.privy.io)で以下を行います。
+
+1. **Email**ログインを有効にする
+2. **App ID**・**App Secret**・**Client ID**を控える
+   - `PRIVY_APP_ID`と`PRIVY_CLIENT_ID`は公開してよい値なので`pkgs/mcp/wrangler.jsonc`の`vars`に、`PRIVY_APP_SECRET`は上のsecretに設定します
+3. **Allowed origins**に、デプロイ後のmcp Workerのオリジン（例：`https://x402-arc-mcp.<あなたのサブドメイン>.workers.dev`）を追加する
+   - mcp WorkerのURLは、デプロイ前でも「Worker名（`x402-arc-mcp`）＋あなたの`workers.dev`サブドメイン」で決まります
+   - サブドメインは、[Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages)のダッシュボードで確認できます。`pnpm --filter facilitator exec wrangler whoami`でもアカウントの情報を確認できます
+   - ローカルで試す場合は`http://localhost:5173`も追加しておきます
+
+### 3. シークレットを登録する
 
 秘密鍵などの秘密情報は、ファイルではなく**wranglerのsecret**として登録します。コマンド実行後に値の入力を求められるので、ご自身で入力してください。
 
@@ -209,16 +228,6 @@ pnpm --filter x402mcp exec wrangler secret put PRIVY_APP_SECRET
 > ⚠️ `PRIVY_APP_SECRET`はそのアプリの全ユーザーのウォレットを作成できる強い権限を持ちます。他人に渡したり、Gitにコミットしたりしないでください。
 
 初回の`wrangler secret put`では、まだWorkerが存在しないため作成するか聞かれることがあります。その場合は`Y`で進めてください。
-
-### 3. Privyの設定をする
-
-MCPサーバーでウォレットを作るために、[Privy Dashboard](https://dashboard.privy.io)で以下を行います。
-
-1. **Email**ログインを有効にする
-2. **App ID**・**App Secret**・**Client ID**を控える
-   - `PRIVY_APP_ID`と`PRIVY_CLIENT_ID`は公開してよい値なので`pkgs/mcp/wrangler.jsonc`の`vars`に、`PRIVY_APP_SECRET`は上のsecretに設定します
-3. **Allowed origins**に、デプロイ後のmcp Workerのオリジン（例：`https://x402-arc-mcp.<あなたのサブドメイン>.workers.dev`）を追加する
-   - ローカルで試す場合は`http://localhost:5173`も追加しておきます
 
 ### 4. デプロイする（順番が大事です）
 
@@ -265,7 +274,7 @@ pnpm deploy:mcp
 
 > 💡 必ず`pnpm deploy:*`を使ってください。`wrangler deploy`を直接実行すると、`pkgs/config/.env`の共有設定（チェーン・トークン・価格など）がWorkerに渡らず、Workerが500エラーを返します。
 
-## 動作確認
+## 動作確認（デプロイ後）
 
 ### 1. facilitatorとserverの確認
 
@@ -349,10 +358,22 @@ pnpm --filter x402mcp exec wrangler delete
 
 おめでとうございます🥳！！
 
-これでx402スキームを実現するための最小限のソースコードをCloudflare Wokersにデプロイして動かす方法を学びました。
+これでx402スキームを実現するための最小限のソースコードをCloudflare Workersにデプロイして動かす方法を学びました。
 
 次はこのコードをベースにあなただけのオリジナルなアプリの開発に繋げてください！！
 
 このワークショップを受講していただき本当にありがとうございました！！
 
 Haruki
+
+## 参考リンク
+
+- [このワークショップのリポジトリ](https://github.com/mashharuki/Arc-x402-sample)
+- [x402 公式サイト](https://www.x402.org/)
+- [x402 ドキュメント](https://docs.x402.org/)
+- [Arc（Circle）](https://docs.arc.io/arc-chain)
+- [Circle Faucet](https://faucet.circle.com/)
+- [Arc Testnet Explorer](https://explorer.testnet.arc.io/)
+- [Privy Dashboard](https://dashboard.privy.io)
+- [Cloudflare Workers ドキュメント](https://developers.cloudflare.com/workers/)
+- [Cloudflare Workers デプロイ手順（詳細版）](./cloudflare-deploy.md)
