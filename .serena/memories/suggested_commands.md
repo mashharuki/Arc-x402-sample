@@ -28,7 +28,7 @@ pnpm x402client run guardrails                  # 3 scenarios: within cap / over
 
 Or run facilitator + server together in the background (PID/logs in `.run/`, gitignored):
 ```bash
-pnpm setup   # copies .env.example -> .env for all three packages
+pnpm run setup   # copies .env.example -> .env for all three packages
 pnpm start   # scripts/start.sh
 pnpm stop    # scripts/stop.sh
 ```

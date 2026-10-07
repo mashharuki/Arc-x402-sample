@@ -26,6 +26,6 @@ template; leftovers listed below. No shared constants package — values live in
 
 ## Leftovers from the Kaia template (still stale)
 
-- `pkgs/client/.env.example` `CHAIN_ID=1001` and `pkgs/server/.env.example` `ASSET_ADDRESS` = JPYC — `pnpm setup` copies these, so fresh setups get Kaia values.
+- `pkgs/client/.env.example` `CHAIN_ID=1001` and `pkgs/server/.env.example` `ASSET_ADDRESS` = JPYC — `pnpm run setup` copies these, so fresh setups get Kaia values.
 - Comments `// Kaia testnet - Exact|Upto` in `facilitator/src/index.ts`; stale `84532` (Base Sepolia) comment in `server/src/resourceServer.ts`.
 - Root `package.json` `name: kaia-x402-sample` (Serena project name derives from it).
