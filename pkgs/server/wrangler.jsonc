@@ -9,6 +9,6 @@
     "traces": { "enabled": true }
   },
   "vars": {
-    "FACILITATOR_URL": "https://x402-arc-facilitator.avp-104-106-107-a78.workers.dev"
+    "FACILITATOR_URL": "<facilitatorのURL>"
   }
 }
