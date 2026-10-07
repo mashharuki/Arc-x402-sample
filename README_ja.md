@@ -92,7 +92,7 @@ printf '%s' '<PAYMENT-REQUIRED value>' | node -e 'let s=""; process.stdin.on("da
 
 ### チェーン・トークン・価格の切り替え
 
-チェーン・トークン・価格は4つのパッケージすべてで共有されており、**`pkgs/config/.env`（1ファイル）** に集約されています（`pnpm setup` により [`pkgs/config/.env.example`](pkgs/config/.env.example) から作成され、デフォルトは Arc Testnet です）。
+チェーン・トークン・価格は4つのパッケージすべてで共有されており、**`pkgs/config/.env`（1ファイル）** に集約されています（`pnpm run setup` により [`pkgs/config/.env.example`](pkgs/config/.env.example) から作成され、デフォルトは Arc Testnet です）。
 
 対応 EVM チェーン・トークン・価格の共有設定はこのファイルで変更します。決済方式の対応コントラクト・署名ドメイン・decimals・ガス資金も確認し、許可するチェーン・トークン・受取先を変更した場合は既存 Privy ウォレットのポリシーも更新してください。
 
@@ -133,7 +133,7 @@ pnpm run setup
 EVM_PRIVATE_KEY=0x<facilitator-private-key>
 ```
 
-チェーン（`CHAIN_NAME`）は `pnpm setup` によってすでに作成されている `pkgs/config/.env` から読み込まれます。
+チェーン（`CHAIN_NAME`）は `pnpm run setup` によってすでに作成されている `pkgs/config/.env` から読み込まれます。
 
 facilitator のウォレットにトランザクション手数料用の Arc Testnet USDC を入金してください。
 

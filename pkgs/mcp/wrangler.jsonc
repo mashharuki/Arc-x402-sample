@@ -20,10 +20,10 @@
     }
   ],
   "vars": {
-    "PAYWALL_API_BASE_URL": "https://x402-arc-server.avp-104-106-107-a78.workers.dev",
+    "PAYWALL_API_BASE_URL": "<serverのURL>",
     "ALLOWED_ORIGINS": "",
-    "PRIVY_APP_ID": "clsy0a89f00ih13j1tbkj5dtr",
-    "PRIVY_CLIENT_ID": "client-WY2hrDwdF2fxC3G1L9KUVcxxSMhUx5gEn7XJEX1inVaTT",
-    "PRIVY_ORIGIN": "https://x402-arc-mcp.avp-104-106-107-a78.workers.dev"
+    "PRIVY_APP_ID": "<あなたのPrivy App ID>",
+    "PRIVY_CLIENT_ID": "<あなたのPrivy Client ID>",
+    "PRIVY_ORIGIN": "<このmcp WorkerのURL>"
   }
 }

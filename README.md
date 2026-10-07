@@ -79,7 +79,7 @@ After the session, try [Workers deployment](#deploy-to-cloudflare-workers) or [s
 
 ### Switch chain, token or price
 
-The chain, token and prices are shared by all four packages, so they live in **one file: `pkgs/config/.env`** (created from [`pkgs/config/.env.example`](pkgs/config/.env.example) by `pnpm setup`, defaults are Arc Testnet). It holds the shared configuration for switching a supported EVM chain, token or price. Also check the scheme's contract availability, token domain/decimals, gas funding, and update policies for existing Privy wallets when their allowed chain, asset or payee changes. Secrets (private keys, `PRIVY_APP_SECRET`) and per-package values (URLs, the payee address) stay in each package's own `.env`.
+The chain, token and prices are shared by all four packages, so they live in **one file: `pkgs/config/.env`** (created from [`pkgs/config/.env.example`](pkgs/config/.env.example) by `pnpm run setup`, defaults are Arc Testnet). It holds the shared configuration for switching a supported EVM chain, token or price. Also check the scheme's contract availability, token domain/decimals, gas funding, and update policies for existing Privy wallets when their allowed chain, asset or payee changes. Secrets (private keys, `PRIVY_APP_SECRET`) and per-package values (URLs, the payee address) stay in each package's own `.env`.
 
 | Variable | Used by | Meaning |
 |---|---|---|
@@ -114,7 +114,7 @@ Set `pkgs/facilitator/.env`:
 EVM_PRIVATE_KEY=0x<facilitator-private-key>
 ```
 
-The chain (`CHAIN_NAME`) comes from `pkgs/config/.env`, which `pnpm setup` has already created.
+The chain (`CHAIN_NAME`) comes from `pkgs/config/.env`, which `pnpm run setup` has already created.
 
 Fund the facilitator wallet with Arc Testnet USDC for transaction fees.
 

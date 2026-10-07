@@ -1,4 +1,3 @@
-import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import {
   getChainId,
   getPayeeAddress,
@@ -44,15 +43,8 @@ export const createX402Config = (env: ServerEnv) => {
       description:
         "Get real-time weather data including temperature, conditions, and humidity",
       mimeType: "application/json",
-      extensions: {
-        ...declareDiscoveryExtension({
-          input: { city: "San Francisco" },
-          inputSchema: {
-            properties: { city: { type: "string", description: "City name" } },
-            required: ["city"],
-          },
-        }),
-      },
+      // Bazaar discovery拡張(declareDiscoveryExtension)は付けない。
+      // Workers上では検証時の ajv が new Function を使い、課金ルートがハングするため
     },
     "GET /usage": {
       accepts: [
