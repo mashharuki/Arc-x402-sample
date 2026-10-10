@@ -7,6 +7,7 @@ for example in \
   pkgs/server/.env.example pkgs/server/.dev.vars.example \
   pkgs/facilitator/.env.example pkgs/facilitator/.dev.vars.example \
   pkgs/mcp/.env.example pkgs/mcp/.dev.vars.example \
+  pkgs/server/wrangler.jsonc.example pkgs/mcp/wrangler.jsonc.example \
   pkgs/config/.env.example
 do
   target=${example%.example}

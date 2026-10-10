@@ -16,7 +16,7 @@ Run from the repo root. The packages are addressed through root scripts: `pnpm f
 
 ```bash
 pnpm i
-pnpm run setup                     # copies pkgs/*/.env.example -> .env (fill in EVM_PRIVATE_KEY etc.)
+pnpm run setup                     # copies pkgs/*/.env.example -> .env and pkgs/{server,mcp}/wrangler.jsonc.example -> wrangler.jsonc (fill in EVM_PRIVATE_KEY etc.)
 
 pnpm facilitator run dev       # :4022  (tsx watch)
 pnpm x402server run dev        # :4021  (tsx watch)
