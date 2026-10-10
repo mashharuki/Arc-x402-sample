@@ -23,7 +23,7 @@ facilitator / server / mcp(リモートMCP)を Cloudflare Workers で動かす�
 
 ## 3. デプロイ前チェックリスト
 
-`vars` は意図的に不完全です。公開してよい(秘密でない)値を、各 `.env` からコピーして追加してください。
+`pkgs/server/wrangler.jsonc` と `pkgs/mcp/wrangler.jsonc` は実際の値(URL・Privy ID)を含むため **git 管理外**です(`.gitignore`)。それぞれ `wrangler.jsonc.example`(placeholder、commit 対象)を元に `cp pkgs/server/wrangler.jsonc.example pkgs/server/wrangler.jsonc`(mcp も同様)で作成し、以下を埋めてください。`.example` 側を編集して実値を書いてしまうと、公開リポジトリに実URL/Privy IDが残るので注意してください。
 
 - [ ] `pkgs/server/wrangler.jsonc` の `vars` に `FACILITATOR_URL`
 - [ ] `pkgs/mcp/wrangler.jsonc` の `vars` に `PRIVY_APP_ID` `PRIVY_CLIENT_ID`(`pkgs/mcp/.env` と同じ値)
